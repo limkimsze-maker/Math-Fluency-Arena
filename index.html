@@ -7,471 +7,147 @@
   <style>
     * { box-sizing: border-box; }
     :root {
-      --ink:#172033;
-      --panel:#ffffff;
-      --sky:#dff4ff;
-      --blue:#2f7df6;
-      --blue2:#1756bb;
-      --red:#ff5b63;
-      --red2:#be2f39;
-      --gold:#ffd84a;
-      --grass:#9fda69;
-      --grass2:#7fc652;
-      --wall:#d7b27b;
-      --wall2:#a8783d;
+      --ink:#172033; --panel:#fff; --blue:#2f7df6; --blue2:#1756bb;
+      --red:#ff5b63; --red2:#be2f39; --gold:#ffd84a; --grass:#9fda69;
+      --grass2:#78c94e; --sand:#d9c48e; --wall:#d8b57b; --wall2:#9f6f37;
     }
-    html, body { margin:0; min-height:100%; font-family:Arial,Helvetica,sans-serif; color:var(--ink); background:linear-gradient(#dff4ff,#f6fbff); }
+    html,body { margin:0; min-height:100%; font-family:Arial,Helvetica,sans-serif; color:var(--ink); background:linear-gradient(#dff4ff,#f8fcff); }
     button,input { font:inherit; }
     button { -webkit-tap-highlight-color:transparent; }
-    .screen { display:none; min-height:100vh; padding:16px; }
+    .screen { display:none; min-height:100vh; padding:14px; }
     .screen.active { display:block; }
-    .card { max-width:560px; margin:24px auto; background:var(--panel); border:4px solid #1f2937; border-radius:24px; padding:24px; box-shadow:0 8px 0 rgba(31,41,55,.14); }
-    h1 { margin:0 0 8px; font-size:clamp(32px,7vw,52px); line-height:1; }
-    .tagline { margin:6px 0 18px; font-weight:700; color:#52617b; }
-    .mini { font-size:14px; color:#607089; line-height:1.45; }
-    .bigbtn { width:100%; min-height:58px; margin:8px 0; border:3px solid #1f2937; border-radius:16px; background:white; font-weight:800; font-size:20px; cursor:pointer; box-shadow:0 5px 0 #1f2937; }
-    .bigbtn:active { transform:translateY(3px); box-shadow:0 2px 0 #1f2937; }
+    .card { width:min(580px,96vw); margin:24px auto; background:var(--panel); border:4px solid var(--ink); border-radius:24px; padding:24px; box-shadow:0 8px 0 rgba(23,32,51,.15); text-align:center; }
+    h1 { margin:0 0 8px; font-size:clamp(34px,7vw,54px); line-height:1; }
+    h2 { margin:4px 0 12px; }
+    .tagline { color:#52617b; font-weight:800; margin:6px 0 18px; }
+    .mini { color:#607089; font-size:14px; line-height:1.45; }
+    .bigbtn { width:100%; min-height:58px; margin:8px 0; border:3px solid var(--ink); border-radius:16px; background:#fff; font-weight:900; font-size:20px; cursor:pointer; box-shadow:0 5px 0 var(--ink); }
+    .bigbtn:active { transform:translateY(3px); box-shadow:0 2px 0 var(--ink); }
+    .bigbtn:disabled { opacity:.55; cursor:wait; }
     .primary { background:var(--gold); }
-    .codeInput { width:190px; max-width:100%; padding:12px; margin:10px 0; border:3px solid #1f2937; border-radius:14px; font-size:28px; font-weight:900; text-align:center; letter-spacing:6px; }
-    .message { min-height:42px; margin:10px 0 0; font-weight:800; line-height:1.35; }
+    .codeInput { width:190px; max-width:100%; padding:12px; margin:10px 0; border:3px solid var(--ink); border-radius:14px; font-size:28px; font-weight:900; text-align:center; letter-spacing:6px; }
+    .nameInput,.password { width:100%; padding:13px; margin:10px 0; border:3px solid var(--ink); border-radius:13px; font-size:20px; text-align:center; }
+    .message { min-height:42px; margin-top:10px; font-weight:800; line-height:1.35; }
     details { margin-top:18px; border-top:2px solid #d7dde6; padding-top:14px; }
     summary { cursor:pointer; font-weight:800; }
-    .password { width:100%; padding:12px; border:3px solid #1f2937; border-radius:12px; margin-top:12px; }
-    .roomBadge { display:inline-block; padding:8px 14px; border:3px solid #1f2937; border-radius:14px; background:#fff; font-size:28px; font-weight:900; letter-spacing:4px; }
-    .nameLabel { display:block; margin:20px 0 7px; font-weight:900; font-size:18px; }
-    .nameInput { width:100%; padding:13px 14px; border:3px solid #1f2937; border-radius:14px; text-align:center; font-size:22px; font-weight:800; }
-    #teamMessage { min-height:28px; margin:8px 0 0; font-weight:800; color:#b4232c; }
-    .teamGrid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:18px; }
-    .teamBtn { min-height:110px; border:4px solid #1f2937; border-radius:20px; color:white; font-weight:900; font-size:24px; cursor:pointer; }
-    .teamBtn.blue { background:linear-gradient(180deg,var(--blue),var(--blue2)); }
-    .teamBtn.red { background:linear-gradient(180deg,var(--red),var(--red2)); }
+    .roomBadge { display:inline-block; padding:8px 14px; border:3px solid var(--ink); border-radius:14px; background:#fff; font-size:30px; font-weight:900; letter-spacing:4px; }
+    .teamBadge { display:inline-block; padding:8px 14px; border:3px solid var(--ink); border-radius:14px; color:#fff; font-weight:900; }
+    .teamBadge.blue { background:var(--blue); } .teamBadge.red { background:var(--red); }
     #gameScreen { padding:8px; overflow:hidden; }
-    #hud { max-width:1100px; margin:0 auto 8px; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:8px; }
-    .scoreBox { border:3px solid #1f2937; border-radius:16px; padding:8px 12px; color:white; font-weight:900; font-size:clamp(18px,3.4vw,28px); }
-    .scoreBox.blue { background:var(--blue); text-align:left; }
-    .scoreBox.red { background:var(--red); text-align:right; }
-    .centreHud { text-align:center; font-weight:900; line-height:1.15; }
-    #connection { font-size:12px; color:#52617b; }
-    #arenaWrap { width:min(1100px,96vw); margin:0 auto; position:relative; }
-    #arena { position:relative; width:100%; aspect-ratio:16/9; min-height:340px; max-height:620px; overflow:hidden; border:5px solid #1f2937; border-radius:22px; background:
-      radial-gradient(circle at 18% 30%,rgba(255,255,255,.25) 0 7%,transparent 7.5%),
-      radial-gradient(circle at 80% 72%,rgba(255,255,255,.2) 0 8%,transparent 8.5%),
-      linear-gradient(135deg,var(--grass),var(--grass2));
-      box-shadow:0 8px 0 rgba(31,41,55,.18);
-      touch-action:none;
-    }
-    .path { position:absolute; background:#d8c48f; opacity:.72; border-radius:40px; }
-    .path.p1 { left:8%; top:43%; width:84%; height:14%; }
-    .path.p2 { left:43%; top:8%; width:14%; height:84%; }
-    .wall { position:absolute; background:linear-gradient(#e7c592,var(--wall)); border:4px solid var(--wall2); border-radius:12px; box-shadow:inset 0 -8px 0 rgba(117,79,35,.18); }
-    .bush { position:absolute; width:68px; height:52px; border-radius:50%; background:#4aa73e; border:4px solid #2e7d32; box-shadow:-22px 7px 0 #55b84a,22px 7px 0 #55b84a; opacity:.94; }
-    .playerWrap { position:absolute; width:48px; height:48px; transform:translate(-50%,-50%); transition:left .18s linear, top .18s linear; z-index:10; pointer-events:none; }
-    .player { position:absolute; inset:0; border:4px solid #172033; border-radius:50%; box-shadow:0 5px 0 rgba(23,32,51,.25); }
-    .player::before { content:""; position:absolute; width:8px; height:8px; border-radius:50%; background:#fff; left:10px; top:12px; box-shadow:16px 0 0 #fff; }
-    .player::after { content:""; position:absolute; width:16px; height:6px; border-bottom:3px solid #172033; border-radius:50%; left:12px; bottom:9px; }
-    .player.blue { background:var(--blue); }
-    .player.red { background:var(--red); }
-    .player.me { outline:4px solid #fff; outline-offset:2px; }
-    .playerName { position:absolute; left:50%; bottom:55px; transform:translateX(-50%); max-width:120px; padding:3px 7px; border:2px solid #172033; border-radius:9px; background:rgba(255,255,255,.94); color:#172033; font-size:12px; font-weight:900; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; box-shadow:0 2px 0 rgba(23,32,51,.2); }
-    .star { position:absolute; width:54px; height:54px; transform:translate(-50%,-50%); display:grid; place-items:center; font-size:44px; filter:drop-shadow(0 4px 0 rgba(100,70,0,.28)); animation:bob 1.1s ease-in-out infinite alternate; z-index:7; }
+    #hud { width:min(1120px,98vw); margin:0 auto 7px; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:8px; }
+    .scoreBox { border:3px solid var(--ink); border-radius:16px; padding:8px 12px; color:#fff; font-weight:900; font-size:clamp(18px,3.2vw,28px); }
+    .scoreBox.blue { background:var(--blue); text-align:left; } .scoreBox.red { background:var(--red); text-align:right; }
+    .centreHud { text-align:center; font-weight:900; line-height:1.15; min-width:120px; }
+    #timer { font-size:clamp(24px,4.8vw,38px); color:#1e2c47; }
+    #connection { font-size:11px; color:#607089; }
+    #arenaWrap { width:min(1120px,97vw); margin:0 auto; position:relative; }
+    #arena { position:relative; width:100%; aspect-ratio:16/9; min-height:350px; max-height:630px; overflow:hidden; border:5px solid var(--ink); border-radius:22px; background:radial-gradient(circle at 20% 25%,rgba(255,255,255,.22) 0 7%,transparent 7.5%),radial-gradient(circle at 80% 72%,rgba(255,255,255,.2) 0 8%,transparent 8.5%),linear-gradient(135deg,var(--grass),var(--grass2)); box-shadow:0 8px 0 rgba(23,32,51,.18); touch-action:none; }
+    .path { position:absolute; background:var(--sand); opacity:.75; border-radius:40px; }
+    .path.p1 { left:7%; top:43%; width:86%; height:14%; } .path.p2 { left:43%; top:7%; width:14%; height:86%; }
+    .wall { position:absolute; background:linear-gradient(#e8c896,var(--wall)); border:4px solid var(--wall2); border-radius:12px; box-shadow:inset 0 -7px 0 rgba(110,73,32,.18); z-index:3; }
+    .bush { position:absolute; width:70px; height:52px; border-radius:50%; background:#4aa73e; border:4px solid #2e7d32; box-shadow:-22px 7px 0 #55b84a,22px 7px 0 #55b84a; opacity:.94; z-index:4; }
+    .base { position:absolute; top:12%; bottom:12%; width:9%; border:4px dashed #fff; border-radius:24px; z-index:2; display:grid; place-items:center; color:#fff; font-size:clamp(14px,2vw,22px); font-weight:900; writing-mode:vertical-rl; text-orientation:mixed; text-shadow:0 2px 0 rgba(0,0,0,.2); }
+    .base.blue { left:1.5%; background:rgba(47,125,246,.55); } .base.red { right:1.5%; background:rgba(255,91,99,.55); }
+    .playerWrap { position:absolute; width:56px; height:70px; transform:translate(-50%,-50%); z-index:12; transition:left .18s linear, top .18s linear; pointer-events:none; }
+    .playerAvatar { position:absolute; left:4px; top:15px; width:48px; height:48px; border:4px solid var(--ink); border-radius:50%; box-shadow:0 5px 0 rgba(23,32,51,.25); }
+    .playerWrap.blue .playerAvatar { background:var(--blue); } .playerWrap.red .playerAvatar { background:var(--red); }
+    .playerWrap.me .playerAvatar { outline:4px solid #fff; outline-offset:2px; }
+    .playerAvatar::before { content:""; position:absolute; width:8px; height:8px; border-radius:50%; background:#fff; left:9px; top:11px; box-shadow:16px 0 0 #fff; }
+    .playerAvatar::after { content:""; position:absolute; width:16px; height:7px; border-bottom:3px solid var(--ink); border-radius:50%; left:12px; bottom:8px; }
+    .playerName { position:absolute; left:50%; top:0; transform:translateX(-50%); max-width:110px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; background:rgba(255,255,255,.95); border:2px solid var(--ink); border-radius:9px; padding:1px 5px; font-size:12px; font-weight:900; }
+    .carryPill { position:absolute; right:-11px; bottom:0; background:#fff; border:2px solid var(--ink); border-radius:10px; padding:1px 5px; font-size:13px; font-weight:900; }
+    .playerWrap.immune .playerAvatar { animation:immuneFlash .25s linear infinite alternate; }
+    @keyframes immuneFlash { to { opacity:.38; } }
+    .star { position:absolute; width:54px; height:54px; transform:translate(-50%,-50%); display:grid; place-items:center; font-size:44px; filter:drop-shadow(0 4px 0 rgba(100,70,0,.28)); animation:bob 1.05s ease-in-out infinite alternate; z-index:8; }
     @keyframes bob { to { transform:translate(-50%,-58%) scale(1.06); } }
-    #streak { position:absolute; left:12px; top:12px; z-index:20; background:#fff; border:3px solid #1f2937; border-radius:14px; padding:7px 10px; font-weight:900; }
-    #hint { position:absolute; right:12px; top:12px; z-index:20; background:rgba(255,255,255,.92); border:3px solid #1f2937; border-radius:14px; padding:7px 10px; font-weight:800; font-size:13px; }
-    #questionOverlay { display:none; position:absolute; inset:0; z-index:50; background:rgba(21,32,51,.55); align-items:center; justify-content:center; padding:16px; }
-    #questionOverlay.open { display:flex; }
-    .questionCard { width:min(520px,94%); background:#fff; border:5px solid #1f2937; border-radius:24px; padding:20px; text-align:center; box-shadow:0 10px 0 rgba(23,32,51,.25); }
-    #questionText { font-size:clamp(38px,8vw,64px); font-weight:900; margin:4px 0 18px; }
+    #personalHud { position:absolute; left:12px; top:12px; z-index:30; background:#fff; border:3px solid var(--ink); border-radius:14px; padding:7px 10px; font-weight:900; line-height:1.35; text-align:left; }
+    #hint { position:absolute; right:12px; top:12px; z-index:30; max-width:260px; background:rgba(255,255,255,.94); border:3px solid var(--ink); border-radius:14px; padding:7px 10px; font-weight:800; font-size:13px; text-align:center; }
+    #toast { position:absolute; left:50%; top:18%; transform:translateX(-50%); z-index:45; background:#fff; border:3px solid var(--ink); border-radius:14px; padding:9px 14px; font-weight:900; opacity:0; transition:opacity .15s; pointer-events:none; }
+    #toast.show { opacity:1; }
+    .overlay { display:none; position:absolute; inset:0; z-index:60; background:rgba(21,32,51,.58); align-items:center; justify-content:center; padding:16px; }
+    .overlay.open { display:flex; }
+    .overlayCard { width:min(540px,94%); background:#fff; border:5px solid var(--ink); border-radius:24px; padding:22px; text-align:center; box-shadow:0 10px 0 rgba(23,32,51,.25); }
+    #questionText { font-size:clamp(38px,8vw,64px); font-weight:900; margin:6px 0 18px; }
     #answers { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-    .answerBtn { min-height:72px; border:4px solid #1f2937; border-radius:16px; background:#f7fbff; font-size:clamp(24px,5vw,36px); font-weight:900; cursor:pointer; }
-    .answerBtn.correct { background:#9ee493; }
-    .answerBtn.wrong { background:#ffb0b5; }
+    .answerBtn { min-height:72px; border:4px solid var(--ink); border-radius:16px; background:#f7fbff; font-size:clamp(24px,5vw,36px); font-weight:900; cursor:pointer; }
+    .answerBtn.correct { background:#9ee493; } .answerBtn.wrong { background:#ffb0b5; }
     #feedback { min-height:28px; margin-top:10px; font-weight:900; font-size:20px; }
+    #waitingOverlay { background:rgba(23,32,51,.45); }
+    #startBtn { background:var(--gold); }
+    .resultGrid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:16px 0; text-align:left; }
+    .resultGrid div { border:2px solid #d7dde6; border-radius:12px; padding:9px; }
+    .resultGrid strong { display:block; font-size:22px; }
     #controls { width:min(420px,94vw); margin:10px auto 0; display:grid; grid-template-columns:74px 74px 74px; grid-template-rows:64px 64px; gap:7px; justify-content:center; touch-action:none; }
-    #controls button { border:3px solid #1f2937; border-radius:16px; background:#fff; font-size:28px; font-weight:900; box-shadow:0 4px 0 #1f2937; touch-action:none; }
-    #up { grid-column:2; grid-row:1; }
-    #left { grid-column:1; grid-row:2; }
-    #down { grid-column:2; grid-row:2; }
-    #right { grid-column:3; grid-row:2; }
+    #controls button { border:3px solid var(--ink); border-radius:16px; background:#fff; font-size:28px; font-weight:900; box-shadow:0 4px 0 var(--ink); touch-action:none; }
+    #up { grid-column:2; grid-row:1; } #left { grid-column:1; grid-row:2; } #down { grid-column:2; grid-row:2; } #right { grid-column:3; grid-row:2; }
     #gameNote { text-align:center; font-size:13px; color:#52617b; margin:7px auto 0; }
-    #winner { display:none; position:absolute; inset:0; z-index:70; align-items:center; justify-content:center; background:rgba(23,32,51,.66); }
-    #winner.show { display:flex; }
-    .winnerCard { background:#fff; border:5px solid #1f2937; border-radius:24px; padding:26px; width:min(440px,90%); text-align:center; }
-    .winnerCard h2 { font-size:44px; margin:0 0 10px; }
-    @media (max-width:700px) {
-      .screen { padding:8px; }
-      .card { margin:10px auto; padding:18px; }
-      #hud { grid-template-columns:1fr 92px 1fr; }
-      .scoreBox { padding:7px; }
-      #arena { min-height:330px; }
-      .wall { transform:scale(.85); }
-      .bush { transform:scale(.8); }
-      .playerName { font-size:11px; max-width:90px; }
-    }
+    @media (max-width:700px) { .screen { padding:7px; } .card { margin:10px auto; padding:18px; } #hud { grid-template-columns:1fr 100px 1fr; } .scoreBox { padding:7px; } #arena { min-height:350px; } .base { width:11%; } #personalHud { font-size:12px; padding:5px 7px; } #hint { font-size:11px; max-width:180px; } }
   </style>
 </head>
 <body>
-
 <section id="lobbyScreen" class="screen active">
   <div class="card">
     <h1>⭐ Math Star Rush</h1>
-    <div class="tagline">Race, solve and power your team!</div>
-    <p class="mini">Pilot mode: 2 public Live Class rooms at a time, plus 1 reserved creator room.</p>
+    <div class="tagline">Solve. Carry. Dodge. Bank.</div>
+    <p class="mini">Pilot capacity: 2 public Live Class rooms at a time, plus 1 reserved creator room.</p>
     <button id="createBtn" class="bigbtn primary">Create Live Class Room</button>
     <hr>
     <input id="roomInput" class="codeInput" type="text" inputmode="numeric" maxlength="4" placeholder="0000" aria-label="Room code">
     <button id="joinBtn" class="bigbtn">Join Room</button>
     <div id="message" class="message" aria-live="polite"></div>
-    <details>
-      <summary>Creator Access</summary>
-      <input id="creatorPassword" class="password" type="password" placeholder="Creator password" autocomplete="current-password">
-      <button id="creatorBtn" class="bigbtn">Open Reserved Room</button>
-    </details>
+    <details><summary>Creator Access</summary><input id="creatorPassword" class="password" type="password" placeholder="Creator password" autocomplete="current-password"><button id="creatorBtn" class="bigbtn">Open Reserved Room</button></details>
   </div>
 </section>
-
-<section id="teamScreen" class="screen">
+<section id="nameScreen" class="screen">
   <div class="card">
-    <h1>Choose Your Team</h1>
-    <p>Room</p>
-    <div class="roomBadge" id="teamRoomCode"></div>
-    <label class="nameLabel" for="playerNameInput">Name your character</label>
-    <input id="playerNameInput" class="nameInput" type="text" maxlength="12" autocomplete="off" placeholder="e.g. Ryan" aria-describedby="nameHelp">
-    <p id="nameHelp" class="mini">Up to 12 letters, numbers, spaces or hyphens. Your name appears above your character.</p>
-    <div id="teamMessage" aria-live="polite"></div>
-    <p class="mini">Your teacher can split the class into Blue and Red teams.</p>
-    <div class="teamGrid">
-      <button class="teamBtn blue" data-team="blue">🔵 BLUE</button>
-      <button class="teamBtn red" data-team="red">🔴 RED</button>
-    </div>
+    <h1>Choose Your Name</h1><p>Room</p><div class="roomBadge" id="nameRoomCode"></div>
+    <p class="mini">Use a short name so you can spot your character in the arena.</p>
+    <input id="playerNameInput" class="nameInput" type="text" maxlength="12" autocomplete="off" placeholder="e.g. Ryan" aria-label="Character name">
+    <button id="nameContinueBtn" class="bigbtn primary">Enter Arena</button><div id="nameMessage" class="message" aria-live="polite"></div>
   </div>
 </section>
-
 <section id="gameScreen" class="screen">
-  <div id="hud">
-    <div class="scoreBox blue">BLUE <span id="blueScore">0</span></div>
-    <div class="centreHud"><div>⭐ STAR RUSH</div><div><span id="myNameHud"></span> · Room <span id="roomCodeText"></span></div><div id="connection">Connecting...</div></div>
-    <div class="scoreBox red"><span id="redScore">0</span> RED</div>
-  </div>
-
-  <div id="arenaWrap">
-    <div id="arena">
-      <div class="path p1"></div><div class="path p2"></div>
-      <div class="wall" style="left:12%;top:18%;width:18%;height:9%;"></div>
-      <div class="wall" style="right:12%;bottom:17%;width:19%;height:9%;"></div>
-      <div class="wall" style="left:16%;bottom:18%;width:10%;height:18%;"></div>
-      <div class="wall" style="right:16%;top:18%;width:10%;height:18%;"></div>
-      <div class="bush" style="left:34%;top:24%;"></div>
-      <div class="bush" style="right:34%;bottom:23%;"></div>
-      <div id="streak">🔥 Streak: <span id="streakValue">0</span></div>
-      <div id="hint">Touch your ⭐ to get a question</div>
-      <div id="star" class="star" aria-label="Math star">⭐</div>
-      <div id="questionOverlay">
-        <div class="questionCard">
-          <div class="mini">Solve to collect the star</div>
-          <div id="questionText">7 × 8</div>
-          <div id="answers"></div>
-          <div id="feedback"></div>
-        </div>
-      </div>
-      <div id="winner"><div class="winnerCard"><h2 id="winnerTitle">Blue Wins!</h2><p>Great teamwork and fluency!</p><button id="closeWinner" class="bigbtn">Keep Playing</button></div></div>
-    </div>
-  </div>
-
-  <div id="controls" aria-label="Movement controls">
-    <button id="up" aria-label="Move up">▲</button>
-    <button id="left" aria-label="Move left">◀</button>
-    <button id="down" aria-label="Move down">▼</button>
-    <button id="right" aria-label="Move right">▶</button>
-  </div>
-  <div id="gameNote">Keyboard: WASD / arrow keys. Movement is synchronised at a low rate to keep Live Class usage efficient.</div>
+  <div id="hud"><div class="scoreBox blue">🔵 BLUE <span id="blueScore">0</span></div><div class="centreHud"><div>⭐ STAR RUSH</div><div id="timer">3:00</div><div>Room <span id="roomCodeText"></span></div><div id="connection">Connecting...</div></div><div class="scoreBox red"><span id="redScore">0</span> RED 🔴</div></div>
+  <div id="arenaWrap"><div id="arena">
+    <div class="path p1"></div><div class="path p2"></div><div class="base blue">BLUE BASE</div><div class="base red">RED BASE</div>
+    <div class="wall" style="left:19%;top:18%;width:16%;height:9%;"></div><div class="wall" style="right:19%;bottom:17%;width:16%;height:9%;"></div><div class="wall" style="left:22%;bottom:17%;width:9%;height:16%;"></div><div class="wall" style="right:22%;top:17%;width:9%;height:16%;"></div>
+    <div class="bush" style="left:37%;top:24%;"></div><div class="bush" style="right:37%;bottom:24%;"></div>
+    <div id="personalHud">⭐ Carry: <span id="carryValue">0</span>/3<br>🔥 Streak: <span id="streakValue">0</span></div><div id="hint">Waiting for the teacher to start.</div><div id="toast"></div><div id="star" class="star" aria-label="Your Math star">⭐</div>
+    <div id="questionOverlay" class="overlay"><div class="overlayCard"><div class="mini">Solve to pick up this star</div><div id="questionText">7 × 8</div><div id="answers"></div><div id="feedback"></div></div></div>
+    <div id="waitingOverlay" class="overlay open"><div class="overlayCard"><h2 id="waitingTitle">Getting your team...</h2><div id="assignedTeam"></div><p id="waitingText">Connecting to your classmates.</p><button id="startBtn" class="bigbtn" style="display:none">Start 3-Minute Round</button></div></div>
+    <div id="resultOverlay" class="overlay"><div class="overlayCard"><h2 id="winnerTitle">Round Over!</h2><p id="finalScore"></p><div class="resultGrid"><div>Correct<strong id="statCorrect">0</strong></div><div>Accuracy<strong id="statAccuracy">0%</strong></div><div>Best streak<strong id="statStreak">0</strong></div><div>Stars collected<strong id="statCollected">0</strong></div><div>Stars stolen<strong id="statStolen">0</strong></div><div>Stars banked<strong id="statBanked">0</strong></div></div><button id="newRoundBtn" class="bigbtn primary" style="display:none">Start Another Round</button></div></div>
+  </div></div>
+  <div id="controls" aria-label="Movement controls"><button id="up" aria-label="Move up">▲</button><button id="left" aria-label="Move left">◀</button><button id="down" aria-label="Move down">▼</button><button id="right" aria-label="Move right">▶</button></div>
+  <div id="gameNote">Move to your ⭐, solve the question, carry up to 3 stars, tag opponents to steal one, and return to your team base to bank them.</div>
 </section>
-
 <script>
 (() => {
-  const BACKEND = "https://live.limkimsze-maker.workers.dev";
-  const WS_BACKEND = "wss://live.limkimsze-maker.workers.dev";
-  const WIN_SCORE = 100;
-  const SEND_INTERVAL = 200;
-  const PLAYER_SPEED = 190;
-
-  const $ = id => document.getElementById(id);
-  const lobbyScreen = $("lobbyScreen"), teamScreen = $("teamScreen"), gameScreen = $("gameScreen");
-  const createBtn = $("createBtn"), joinBtn = $("joinBtn"), creatorBtn = $("creatorBtn");
-  const roomInput = $("roomInput"), creatorPassword = $("creatorPassword"), messageEl = $("message");
-  const playerNameInput = $("playerNameInput"), teamMessage = $("teamMessage"), myNameHud = $("myNameHud");
-  const arena = $("arena"), star = $("star"), questionOverlay = $("questionOverlay"), questionText = $("questionText"), answers = $("answers"), feedback = $("feedback");
-  const blueScoreEl = $("blueScore"), redScoreEl = $("redScore"), streakValue = $("streakValue"), connection = $("connection");
-
-  const playerId = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random()).slice(0,8);
-  const players = new Map();
-  const moveState = { up:false, down:false, left:false, right:false };
-  let currentRoom = "", myTeam = "blue", myName = "Player", socket = null;
-  let x = 100, y = 100, starX = 300, starY = 220;
-  let blueScore = 0, redScore = 0, streak = 0, questionOpen = false, scoringLocked = false;
-  let lastFrame = performance.now(), lastSend = 0, movedSinceSend = false;
-
-  function showScreen(screen) {
-    [lobbyScreen,teamScreen,gameScreen].forEach(s => s.classList.remove("active"));
-    screen.classList.add("active");
-  }
-  function showMessage(text) { messageEl.textContent = text; }
-  function setBusy(button,busy) { button.disabled = busy; }
-  function cleanName(value) {
-    return String(value || "")
-      .replace(/[^A-Za-z0-9 -]/g, "")
-      .replace(/\s+/g, " ")
-      .trim()
-      .slice(0,12);
-  }
-
-  async function createPublicRoom() {
-    showMessage("Creating room..."); setBusy(createBtn,true);
-    try {
-      const r = await fetch(BACKEND + "/api/create-room", {method:"POST"});
-      const data = await r.json();
-      if (!r.ok) { showMessage(data.full ? "⭐ All public Live Class rooms are currently in use. Please try again in a few minutes." : (data.message || "Unable to create room.")); return; }
-      goChooseTeam(data.code);
-    } catch(e) { console.error(e); showMessage("Unable to connect to the Live Class service."); }
-    finally { setBusy(createBtn,false); }
-  }
-
-  async function joinRoom() {
-    const code = roomInput.value.replace(/\D/g,"").slice(0,4);
-    if (code.length !== 4) { showMessage("Please enter a 4-digit room code."); return; }
-    showMessage("Checking room..."); setBusy(joinBtn,true);
-    try {
-      const r = await fetch(BACKEND + "/api/join-room?code=" + encodeURIComponent(code));
-      if (!r.ok) { showMessage("Room " + code + " is not active. Check the code with your teacher."); return; }
-      goChooseTeam(code);
-    } catch(e) { console.error(e); showMessage("Unable to check the room."); }
-    finally { setBusy(joinBtn,false); }
-  }
-
-  async function createCreatorRoom() {
-    const password = creatorPassword.value;
-    if (!password) { showMessage("Enter the creator password."); return; }
-    showMessage("Opening reserved room..."); setBusy(creatorBtn,true);
-    try {
-      const r = await fetch(BACKEND + "/api/creator-room", {method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({password})});
-      const data = await r.json(); creatorPassword.value = "";
-      if (!r.ok) { showMessage(data.message || "Creator access denied."); return; }
-      goChooseTeam(data.code);
-    } catch(e) { console.error(e); showMessage("Unable to open creator room."); }
-    finally { setBusy(creatorBtn,false); }
-  }
-
-  function goChooseTeam(code) {
-    currentRoom = String(code);
-    $("teamRoomCode").textContent = currentRoom;
-    teamMessage.textContent = "";
-    playerNameInput.value = "";
-    showScreen(teamScreen);
-    setTimeout(() => playerNameInput.focus(), 50);
-  }
-
-  playerNameInput.addEventListener("input", () => {
-    const cleaned = cleanName(playerNameInput.value);
-    if (playerNameInput.value !== cleaned) playerNameInput.value = cleaned;
-  });
-
-  document.querySelectorAll(".teamBtn").forEach(btn => btn.addEventListener("click", () => {
-    myName = cleanName(playerNameInput.value);
-    if (!myName) {
-      teamMessage.textContent = "Please enter your character name first.";
-      playerNameInput.focus();
-      return;
-    }
-    teamMessage.textContent = "";
-    myTeam = btn.dataset.team;
-    $("roomCodeText").textContent = currentRoom;
-    myNameHud.textContent = myName;
-    showScreen(gameScreen);
-    requestAnimationFrame(() => {
-      x = myTeam === "blue" ? arena.clientWidth * .18 : arena.clientWidth * .82;
-      y = arena.clientHeight * (.3 + Math.random()*.4);
-      drawPlayer(playerId,x,y,myTeam,true,myName);
-      placeStar();
-      connect();
-    });
-  }));
-
-  function connect() {
-    socket = new WebSocket(WS_BACKEND + "/room/" + encodeURIComponent(currentRoom));
-    socket.addEventListener("open", () => {
-      connection.textContent = "CONNECTED ✓";
-      sendPosition(true);
-      send({type:"needSync",id:playerId});
-    });
-    socket.addEventListener("close", () => connection.textContent = "DISCONNECTED");
-    socket.addEventListener("error", () => connection.textContent = "CONNECTION ERROR");
-    socket.addEventListener("message", event => {
-      try {
-        const d = JSON.parse(event.data);
-        if (d.type === "move" && d.id !== playerId) drawPlayer(d.id,d.x,d.y,d.team,false,cleanName(d.name) || "Player");
-        if (d.type === "score") {
-          if (d.team === "blue") blueScore += Number(d.points)||0;
-          if (d.team === "red") redScore += Number(d.points)||0;
-          updateScore();
-        }
-        if (d.type === "needSync") {
-          send({type:"scoreSync",blue:blueScore,red:redScore});
-          sendPosition(true);
-        }
-        if (d.type === "scoreSync") {
-          blueScore = Math.max(blueScore, Number(d.blue)||0);
-          redScore = Math.max(redScore, Number(d.red)||0);
-          updateScore();
-        }
-      } catch(e) { console.error(e); }
-    });
-  }
-
-  function send(data) {
-    if (socket && socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify(data));
-  }
-
-  function drawPlayer(id,px,py,team,isMe,name) {
-    let wrap = players.get(id);
-    if (!wrap) {
-      wrap = document.createElement("div");
-      wrap.className = "playerWrap";
-      wrap.dataset.id = id;
-
-      const p = document.createElement("div");
-      p.className = "player " + (team === "red" ? "red" : "blue") + (isMe ? " me" : "");
-
-      const label = document.createElement("div");
-      label.className = "playerName";
-
-      wrap.appendChild(p);
-      wrap.appendChild(label);
-      arena.appendChild(wrap);
-      players.set(id,wrap);
-    }
-    const p = wrap.querySelector(".player");
-    const label = wrap.querySelector(".playerName");
-    p.classList.toggle("blue",team !== "red");
-    p.classList.toggle("red",team === "red");
-    p.classList.toggle("me",!!isMe);
-    label.textContent = cleanName(name) || "Player";
-    wrap.style.left = px + "px";
-    wrap.style.top = py + "px";
-  }
-
-  function sendPosition(force=false) {
-    const now = performance.now();
-    if (!force && now-lastSend < SEND_INTERVAL) return;
-    lastSend = now; movedSinceSend = false;
-    send({type:"move",id:playerId,x:Math.round(x),y:Math.round(y),team:myTeam,name:myName});
-  }
-
-  function gameLoop(now) {
-    const dt = Math.min(.05,(now-lastFrame)/1000); lastFrame = now;
-    if (gameScreen.classList.contains("active") && !questionOpen) {
-      let dx = (moveState.right?1:0) - (moveState.left?1:0);
-      let dy = (moveState.down?1:0) - (moveState.up?1:0);
-      if (dx || dy) {
-        const len = Math.hypot(dx,dy) || 1; dx/=len; dy/=len;
-        x += dx*PLAYER_SPEED*dt; y += dy*PLAYER_SPEED*dt;
-        x = Math.max(26,Math.min(arena.clientWidth-26,x));
-        y = Math.max(26,Math.min(arena.clientHeight-26,y));
-        drawPlayer(playerId,x,y,myTeam,true,myName); movedSinceSend = true; sendPosition(false);
-        checkStarCollision();
-      }
-    }
-    requestAnimationFrame(gameLoop);
-  }
-  requestAnimationFrame(gameLoop);
-
-  function placeStar() {
-    const margin = 70;
-    starX = margin + Math.random()*Math.max(20,arena.clientWidth-margin*2);
-    starY = margin + Math.random()*Math.max(20,arena.clientHeight-margin*2);
-    star.style.left = starX + "px"; star.style.top = starY + "px";
-  }
-
-  function checkStarCollision() {
-    if (questionOpen || scoringLocked) return;
-    if (Math.hypot(x-starX,y-starY) < 52) openQuestion();
-  }
-
-  function makeQuestion() {
-    const a = 2 + Math.floor(Math.random()*9);
-    const b = 2 + Math.floor(Math.random()*9);
-    const correct = a*b;
-    const opts = new Set([correct]);
-    const candidates = [correct+a, correct-a, correct+b, correct-b, correct+1, correct-1, correct+2, correct-2];
-    while (opts.size < 4) {
-      const v = candidates[Math.floor(Math.random()*candidates.length)];
-      if (v > 0) opts.add(v);
-    }
-    return {text:a + " × " + b, correct, options:[...opts].sort(()=>Math.random()-.5)};
-  }
-
-  function stopMovement() { Object.keys(moveState).forEach(k => moveState[k]=false); }
-
-  function openQuestion() {
-    questionOpen = true; stopMovement(); feedback.textContent = "";
-    const q = makeQuestion(); questionText.textContent = q.text;
-    answers.innerHTML = "";
-    q.options.forEach(value => {
-      const btn = document.createElement("button"); btn.className = "answerBtn"; btn.textContent = value;
-      btn.addEventListener("click", () => answerQuestion(btn,value,q.correct)); answers.appendChild(btn);
-    });
-    questionOverlay.classList.add("open");
-  }
-
-  function answerQuestion(btn,value,correct) {
-    if (scoringLocked) return; scoringLocked = true;
-    [...answers.children].forEach(b => b.disabled = true);
-    const right = value === correct;
-    if (right) {
-      btn.classList.add("correct"); streak += 1;
-      const points = streak % 5 === 0 ? 2 : 1;
-      feedback.textContent = points === 2 ? "🔥 5-streak! +2 stars" : "Correct! +1 star";
-      if (myTeam === "blue") blueScore += points; else redScore += points;
-      updateScore(); send({type:"score",team:myTeam,points});
-    } else {
-      btn.classList.add("wrong"); streak = 0;
-      [...answers.children].forEach(b => { if (Number(b.textContent) === correct) b.classList.add("correct"); });
-      feedback.textContent = "Answer: " + correct + ". Find the next star!";
-    }
-    streakValue.textContent = streak;
-    setTimeout(() => {
-      questionOverlay.classList.remove("open"); questionOpen = false; scoringLocked = false; placeStar();
-    }, right ? 650 : 1050);
-  }
-
-  function updateScore() {
-    blueScoreEl.textContent = blueScore; redScoreEl.textContent = redScore;
-    if (blueScore >= WIN_SCORE || redScore >= WIN_SCORE) {
-      $("winnerTitle").textContent = blueScore >= WIN_SCORE ? "🔵 Blue Wins!" : "🔴 Red Wins!";
-      $("winner").classList.add("show");
-    }
-  }
-
-  $("closeWinner").addEventListener("click", () => $("winner").classList.remove("show"));
-
-  function bindHold(buttonId,dir) {
-    const el = $(buttonId);
-    const on = e => { e.preventDefault(); moveState[dir]=true; };
-    const off = e => { e.preventDefault(); moveState[dir]=false; if (movedSinceSend) sendPosition(true); };
-    el.addEventListener("pointerdown",on); el.addEventListener("pointerup",off); el.addEventListener("pointercancel",off); el.addEventListener("pointerleave",off);
-  }
-  bindHold("up","up"); bindHold("down","down"); bindHold("left","left"); bindHold("right","right");
-
-  const keyMap = {ArrowUp:"up",w:"up",W:"up",ArrowDown:"down",s:"down",S:"down",ArrowLeft:"left",a:"left",A:"left",ArrowRight:"right",d:"right",D:"right"};
-  document.addEventListener("keydown", e => { const d=keyMap[e.key]; if (!d || !gameScreen.classList.contains("active") || questionOpen) return; e.preventDefault(); moveState[d]=true; });
-  document.addEventListener("keyup", e => { const d=keyMap[e.key]; if (!d) return; e.preventDefault(); moveState[d]=false; if (movedSinceSend) sendPosition(true); });
-  window.addEventListener("blur", stopMovement);
-
-  createBtn.addEventListener("click",createPublicRoom);
-  joinBtn.addEventListener("click",joinRoom);
-  creatorBtn.addEventListener("click",createCreatorRoom);
-  roomInput.addEventListener("input",()=> roomInput.value = roomInput.value.replace(/\D/g,""));
-  roomInput.addEventListener("keydown",e=>{if(e.key==="Enter")joinRoom();});
-  creatorPassword.addEventListener("keydown",e=>{if(e.key==="Enter")createCreatorRoom();});
-  playerNameInput.addEventListener("keydown",e=>{if(e.key==="Enter")document.querySelector(".teamBtn.blue").focus();});
+  const BACKEND="https://live.limkimsze-maker.workers.dev",WS_BACKEND="wss://live.limkimsze-maker.workers.dev",ROUND_MS=180000,SEND_INTERVAL=200,PLAYER_SPEED=190,CARRY_LIMIT=3,TAG_DISTANCE=54,TAG_IMMUNITY_MS=2000,BASE_FRACTION=.115;
+  const $=id=>document.getElementById(id),lobbyScreen=$("lobbyScreen"),nameScreen=$("nameScreen"),gameScreen=$("gameScreen"),createBtn=$("createBtn"),joinBtn=$("joinBtn"),creatorBtn=$("creatorBtn"),roomInput=$("roomInput"),creatorPassword=$("creatorPassword"),messageEl=$("message"),playerNameInput=$("playerNameInput"),nameContinueBtn=$("nameContinueBtn"),nameMessage=$("nameMessage"),arena=$("arena"),star=$("star"),questionOverlay=$("questionOverlay"),questionText=$("questionText"),answers=$("answers"),feedback=$("feedback"),blueScoreEl=$("blueScore"),redScoreEl=$("redScore"),timerEl=$("timer"),connection=$("connection"),carryValue=$("carryValue"),streakValue=$("streakValue"),hint=$("hint"),toast=$("toast"),waitingOverlay=$("waitingOverlay"),waitingTitle=$("waitingTitle"),waitingText=$("waitingText"),assignedTeam=$("assignedTeam"),startBtn=$("startBtn"),resultOverlay=$("resultOverlay"),newRoundBtn=$("newRoundBtn");
+  const playerId=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random()).slice(0,8),players=new Map(),moveState={up:false,down:false,left:false,right:false},tagCooldown=new Map();
+  let currentRoom="",playerName="",myTeam=null,socket=null,isHost=false,x=100,y=100,starX=300,starY=220,carried=0,immuneUntil=0,blueScore=0,redScore=0,streak=0,bestStreak=0,questionOpen=false,answerLocked=false,roundStartAt=0,roundEndAt=0,roundActive=false,roundFinished=false,teamAssigned=false,lastFrame=performance.now(),lastSend=0,movedSinceSend=false,lastHeartbeat=0,lastBankAt=0,assignmentTimer=null,toastTimer=null;
+  const stats={attempts:0,correct:0,collected:0,stolen:0,banked:0};
+  function showScreen(screen){[lobbyScreen,nameScreen,gameScreen].forEach(s=>s.classList.remove("active"));screen.classList.add("active");} function showMessage(t){messageEl.textContent=t;} function setBusy(btn,b){btn.disabled=b;} function safeName(v){return v.replace(/[<>]/g,"").replace(/\s+/g," ").trim().slice(0,12);} function flashToast(text){toast.textContent=text;toast.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove("show"),1100);}
+  async function createPublicRoom(){showMessage("Creating room...");setBusy(createBtn,true);try{const r=await fetch(BACKEND+"/api/create-room",{method:"POST"}),d=await r.json();if(!r.ok){showMessage(d.full?"⭐ All public Live Class rooms are currently in use. Please try again in a few minutes.":(d.message||"Unable to create room."));return;}isHost=true;goName(d.code);}catch(e){console.error(e);showMessage("Unable to connect to the Live Class service.");}finally{setBusy(createBtn,false);}}
+  async function joinRoom(){const code=roomInput.value.replace(/\D/g,"").slice(0,4);if(code.length!==4){showMessage("Please enter a 4-digit room code.");return;}showMessage("Checking room...");setBusy(joinBtn,true);try{const r=await fetch(BACKEND+"/api/join-room?code="+encodeURIComponent(code));if(!r.ok){showMessage("Room "+code+" is not active. Check the code with your teacher.");return;}isHost=false;goName(code);}catch(e){console.error(e);showMessage("Unable to check the room.");}finally{setBusy(joinBtn,false);}}
+  async function createCreatorRoom(){const password=creatorPassword.value;if(!password){showMessage("Enter the creator password.");return;}showMessage("Opening reserved room...");setBusy(creatorBtn,true);try{const r=await fetch(BACKEND+"/api/creator-room",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({password})}),d=await r.json();creatorPassword.value="";if(!r.ok){showMessage(d.message||"Creator access denied.");return;}isHost=true;goName(d.code);}catch(e){console.error(e);showMessage("Unable to open creator room.");}finally{setBusy(creatorBtn,false);}}
+  function goName(code){currentRoom=String(code);$("nameRoomCode").textContent=currentRoom;nameMessage.textContent="";showScreen(nameScreen);setTimeout(()=>playerNameInput.focus(),50);} function enterArena(){const n=safeName(playerNameInput.value);if(!n){nameMessage.textContent="Please enter a name.";return;}playerName=n;$("roomCodeText").textContent=currentRoom;showScreen(gameScreen);waitingOverlay.classList.add("open");waitingTitle.textContent="Getting your team...";waitingText.textContent="Connecting to your classmates.";assignedTeam.innerHTML="";star.style.display="none";connect();}
+  function connect(){socket=new WebSocket(WS_BACKEND+"/room/"+encodeURIComponent(currentRoom));socket.addEventListener("open",()=>{connection.textContent="CONNECTED ✓";send({type:"hello",id:playerId,name:playerName});send({type:"needSync",id:playerId});scheduleTeamAssignment();});socket.addEventListener("close",()=>connection.textContent="DISCONNECTED");socket.addEventListener("error",()=>connection.textContent="CONNECTION ERROR");socket.addEventListener("message",e=>{try{handleMessage(JSON.parse(e.data));}catch(err){console.error(err);}});} function send(data){if(socket&&socket.readyState===WebSocket.OPEN)socket.send(JSON.stringify(data));}
+  function handleMessage(d){if(d.type==="hello"&&d.id!==playerId){sendPlayerState();sendSync();return;}if(d.type==="needSync"&&d.id!==playerId){sendPlayerState();sendSync();return;}if(d.type==="playerState"&&d.id!==playerId){upsertRemote(d);return;}if(d.type==="move"&&d.id!==playerId){upsertRemote(d);return;}if(d.type==="startRound"){resetRoundLocal();applyStart(d.startAt,d.endAt);return;}if(d.type==="sync"){applySync(d);return;}if(d.type==="bank"){if(d.team==="blue")blueScore+=Number(d.points)||0;else if(d.team==="red")redScore+=Number(d.points)||0;updateScore();return;}if(d.type==="tagAttempt"&&d.targetId===playerId){handleIncomingTag(d);return;}if(d.type==="tagSuccess"&&d.taggerId===playerId){handleTagSuccess(d);return;}}
+  function scheduleTeamAssignment(){clearTimeout(assignmentTimer);assignmentTimer=setTimeout(assignBalancedTeam,650);} function assignBalancedTeam(){if(teamAssigned)return;prunePlayers();let blue=0,red=0;players.forEach(p=>{if(p.team==="blue")blue++;if(p.team==="red")red++;});myTeam=blue<red?"blue":red<blue?"red":(Math.random()<.5?"blue":"red");teamAssigned=true;x=myTeam==="blue"?arena.clientWidth*.16:arena.clientWidth*.84;y=arena.clientHeight*(.3+Math.random()*.4);drawSelf();sendPlayerState();assignedTeam.innerHTML='<span class="teamBadge '+myTeam+'">'+(myTeam==="blue"?'🔵 BLUE TEAM':'🔴 RED TEAM')+'</span>';waitingTitle.textContent="You are ready!";waitingText.textContent=isHost?"Share the room code, then start when your class is ready.":"Waiting for your teacher to start the 3-minute round.";startBtn.style.display=isHost?"block":"none";placeStar();updateCarry();if(roundActive&&roundEndAt>Date.now())waitingOverlay.classList.remove("open");}
+  function playerPayload(type="playerState"){return{type,id:playerId,name:playerName,team:myTeam,x:Math.round(x),y:Math.round(y),carried,immuneUntil,ts:Date.now()};} function sendPlayerState(){if(teamAssigned)send(playerPayload("playerState"));} function sendPosition(force=false){if(!teamAssigned)return;const now=performance.now();if(!force&&now-lastSend<SEND_INTERVAL)return;lastSend=now;movedSinceSend=false;send(playerPayload("move"));} function sendSync(){send({type:"sync",blue:blueScore,red:redScore,startAt:roundStartAt,endAt:roundEndAt,active:roundActive&&!roundFinished,ts:Date.now()});} function applySync(d){blueScore=Math.max(blueScore,Number(d.blue)||0);redScore=Math.max(redScore,Number(d.red)||0);updateScore();const end=Number(d.endAt)||0;if(end>Date.now()&&end>roundEndAt)applyStart(Number(d.startAt)||Date.now(),end);}
+  function upsertRemote(d){if(!d.team)return;let rec=players.get(d.id)||{};rec={...rec,id:d.id,name:safeName(String(d.name||rec.name||"Player")),team:d.team,x:Number(d.x??rec.x??100),y:Number(d.y??rec.y??100),carried:Number(d.carried??rec.carried??0),immuneUntil:Number(d.immuneUntil??rec.immuneUntil??0),lastSeen:Date.now()};players.set(d.id,rec);drawRemote(rec);} function prunePlayers(){const now=Date.now();for(const [id,p] of players){if(now-(p.lastSeen||0)>25000){players.delete(id);const el=document.querySelector('[data-player="'+id+'"]');if(el)el.remove();}}}
+  function makePlayerEl(id,isMe=false){const wrap=document.createElement("div");wrap.className="playerWrap"+(isMe?" me":"");wrap.dataset.player=id;wrap.innerHTML='<div class="playerName"></div><div class="playerAvatar"></div><div class="carryPill">⭐0</div>';arena.appendChild(wrap);return wrap;} function updatePlayerEl(el,name,team,px,py,c,immune){el.classList.toggle("blue",team!=="red");el.classList.toggle("red",team==="red");el.classList.toggle("immune",immune>Date.now());el.style.left=px+"px";el.style.top=py+"px";el.querySelector(".playerName").textContent=name;el.querySelector(".carryPill").textContent="⭐"+c;} function drawSelf(){let el=document.querySelector('[data-player="'+playerId+'"]');if(!el)el=makePlayerEl(playerId,true);updatePlayerEl(el,playerName,myTeam,x,y,carried,immuneUntil);} function drawRemote(p){let el=document.querySelector('[data-player="'+p.id+'"]');if(!el)el=makePlayerEl(p.id,false);updatePlayerEl(el,p.name,p.team,p.x,p.y,p.carried,p.immuneUntil);}
+  function startRound(){if(!isHost||!teamAssigned)return;const start=Date.now()+1500,end=start+ROUND_MS;resetRoundLocal();send({type:"startRound",startAt:start,endAt:end});applyStart(start,end);} function resetRoundLocal(){blueScore=0;redScore=0;carried=0;streak=0;bestStreak=0;immuneUntil=0;stats.attempts=0;stats.correct=0;stats.collected=0;stats.stolen=0;stats.banked=0;roundFinished=false;resultOverlay.classList.remove("open");updateScore();updateCarry();} function applyStart(start,end){roundStartAt=Number(start);roundEndAt=Number(end);roundActive=true;roundFinished=false;if(teamAssigned)waitingOverlay.classList.remove("open");resultOverlay.classList.remove("open");hint.textContent="Get your ⭐, solve, then bank it at your base!";updateTimer();} function finishRound(){if(roundFinished)return;roundFinished=true;roundActive=false;stopMovement();questionOverlay.classList.remove("open");questionOpen=false;timerEl.textContent="0:00";hint.textContent="Round over!";const winner=blueScore===redScore?"🤝 It's a Draw!":blueScore>redScore?"🔵 Blue Wins!":"🔴 Red Wins!";$("winnerTitle").textContent=winner;$("finalScore").textContent="Blue "+blueScore+" — "+redScore+" Red";$("statCorrect").textContent=stats.correct;$("statAccuracy").textContent=stats.attempts?Math.round(stats.correct/stats.attempts*100)+"%":"0%";$("statStreak").textContent=bestStreak;$("statCollected").textContent=stats.collected;$("statStolen").textContent=stats.stolen;$("statBanked").textContent=stats.banked;newRoundBtn.style.display=isHost?"block":"none";resultOverlay.classList.add("open");} function updateTimer(){if(!roundActive){if(!roundFinished)timerEl.textContent="3:00";return;}const ms=roundEndAt-Date.now();if(ms<=0){finishRound();return;}const s=Math.ceil(ms/1000);timerEl.textContent=Math.floor(s/60)+":"+String(s%60).padStart(2,"0");}
+  function placeStar(){if(!teamAssigned)return;const margin=85;starX=margin+Math.random()*Math.max(20,arena.clientWidth-margin*2);starY=margin+Math.random()*Math.max(20,arena.clientHeight-margin*2);star.style.left=starX+"px";star.style.top=starY+"px";star.style.display=carried<CARRY_LIMIT?"grid":"none";} function checkStarCollision(){if(!roundActive||questionOpen||carried>=CARRY_LIMIT)return;if(Math.hypot(x-starX,y-starY)<52)openQuestion();} function makeQuestion(){const a=2+Math.floor(Math.random()*9),b=2+Math.floor(Math.random()*9),correct=a*b,opts=new Set([correct]),candidates=[correct+a,correct-a,correct+b,correct-b,correct+1,correct-1,correct+2,correct-2];while(opts.size<4){const v=candidates[Math.floor(Math.random()*candidates.length)];if(v>0)opts.add(v);}return{text:a+" × "+b,correct,options:[...opts].sort(()=>Math.random()-.5)};} function openQuestion(){questionOpen=true;stopMovement();feedback.textContent="";const q=makeQuestion();questionText.textContent=q.text;answers.innerHTML="";q.options.forEach(v=>{const b=document.createElement("button");b.className="answerBtn";b.textContent=v;b.addEventListener("click",()=>answerQuestion(b,v,q.correct));answers.appendChild(b);});questionOverlay.classList.add("open");} function answerQuestion(btn,value,correct){if(answerLocked)return;answerLocked=true;stats.attempts++;[...answers.children].forEach(b=>b.disabled=true);const right=value===correct;if(right){btn.classList.add("correct");stats.correct++;stats.collected++;streak++;bestStreak=Math.max(bestStreak,streak);carried=Math.min(CARRY_LIMIT,carried+1);feedback.textContent="Correct! ⭐ Star picked up.";updateCarry();sendPlayerState();}else{btn.classList.add("wrong");streak=0;[...answers.children].forEach(b=>{if(Number(b.textContent)===correct)b.classList.add("correct");});feedback.textContent="Answer: "+correct+". Try the next star!";streakValue.textContent=streak;}setTimeout(()=>{questionOverlay.classList.remove("open");questionOpen=false;answerLocked=false;placeStar();},right?650:1000);}
+  function updateCarry(){carryValue.textContent=carried;streakValue.textContent=streak;drawSelf();if(carried>=CARRY_LIMIT){star.style.display="none";hint.textContent="⭐ You are carrying 3! Get back to your "+myTeam.toUpperCase()+" base.";}else if(roundActive){star.style.display="grid";hint.textContent=carried?"Carry "+carried+" star"+(carried===1?"":"s")+" safely to your base — or collect more.":"Find your ⭐ and solve the Math question.";}}
+  function checkBank(){if(!roundActive||!myTeam||carried<=0)return;const w=arena.clientWidth,inBase=myTeam==="blue"?x<w*BASE_FRACTION:x>w*(1-BASE_FRACTION);if(!inBase||Date.now()-lastBankAt<700)return;lastBankAt=Date.now();const points=carried;carried=0;stats.banked+=points;if(myTeam==="blue")blueScore+=points;else redScore+=points;updateScore();send({type:"bank",team:myTeam,points});flashToast("🏦 Banked "+points+" star"+(points===1?"":"s")+"!");updateCarry();placeStar();sendPlayerState();} function updateScore(){blueScoreEl.textContent=blueScore;redScoreEl.textContent=redScore;}
+  function checkTagCollision(){if(!roundActive||questionOpen||carried>=CARRY_LIMIT)return;const now=Date.now();for(const [id,p] of players){if(p.team===myTeam||now-(p.lastSeen||0)>5000||Math.hypot(x-p.x,y-p.y)>TAG_DISTANCE)continue;const last=tagCooldown.get(id)||0;if(now-last<700)continue;tagCooldown.set(id,now);send({type:"tagAttempt",taggerId:playerId,targetId:id,taggerName:playerName,ts:now});}} function handleIncomingTag(d){const now=Date.now(),tagger=players.get(d.taggerId);if(!roundActive||carried<=0||now<immuneUntil||!tagger||tagger.team===myTeam||tagger.carried>=CARRY_LIMIT||Math.hypot(x-tagger.x,y-tagger.y)>TAG_DISTANCE+14)return;carried--;immuneUntil=now+TAG_IMMUNITY_MS;flashToast("💫 "+safeName(String(d.taggerName||"Opponent"))+" stole 1 star!");updateCarry();placeStar();sendPlayerState();send({type:"tagSuccess",taggerId:d.taggerId,targetId:playerId,targetName:playerName});} function handleTagSuccess(d){if(!roundActive||carried>=CARRY_LIMIT)return;carried++;stats.stolen++;flashToast("⚡ You stole 1 star from "+safeName(String(d.targetName||"an opponent"))+"!");updateCarry();sendPlayerState();}
+  function wallRects(){const ar=arena.getBoundingClientRect();return[...arena.querySelectorAll(".wall")].map(el=>{const r=el.getBoundingClientRect();return{x:r.left-ar.left-8,y:r.top-ar.top-8,w:r.width+16,h:r.height+16};});} function blocked(nx,ny){const rad=23;return wallRects().some(r=>nx+rad>r.x&&nx-rad<r.x+r.w&&ny+rad>r.y&&ny-rad<r.y+r.h);} function stopMovement(){Object.keys(moveState).forEach(k=>moveState[k]=false);}
+  function gameLoop(now){const dt=Math.min(.05,(now-lastFrame)/1000);lastFrame=now;updateTimer();prunePlayers();if(teamAssigned&&gameScreen.classList.contains("active")){if(roundActive&&!questionOpen){let dx=(moveState.right?1:0)-(moveState.left?1:0),dy=(moveState.down?1:0)-(moveState.up?1:0);if(dx||dy){const len=Math.hypot(dx,dy)||1;dx/=len;dy/=len;const nx=Math.max(28,Math.min(arena.clientWidth-28,x+dx*PLAYER_SPEED*dt)),ny=Math.max(34,Math.min(arena.clientHeight-30,y+dy*PLAYER_SPEED*dt));if(!blocked(nx,ny)){x=nx;y=ny;drawSelf();movedSinceSend=true;sendPosition(false);}checkStarCollision();checkBank();checkTagCollision();}}if(now-lastHeartbeat>10000){lastHeartbeat=now;sendPlayerState();}const selfEl=document.querySelector('[data-player="'+playerId+'"]');if(selfEl)selfEl.classList.toggle("immune",immuneUntil>Date.now());}requestAnimationFrame(gameLoop);} requestAnimationFrame(gameLoop);
+  function bindHold(id,dir){const el=$(id),on=e=>{e.preventDefault();if(roundActive&&!questionOpen)moveState[dir]=true;},off=e=>{e.preventDefault();moveState[dir]=false;if(movedSinceSend)sendPosition(true);};el.addEventListener("pointerdown",on);el.addEventListener("pointerup",off);el.addEventListener("pointercancel",off);el.addEventListener("pointerleave",off);} bindHold("up","up");bindHold("down","down");bindHold("left","left");bindHold("right","right");
+  const keyMap={ArrowUp:"up",w:"up",W:"up",ArrowDown:"down",s:"down",S:"down",ArrowLeft:"left",a:"left",A:"left",ArrowRight:"right",d:"right",D:"right"}; document.addEventListener("keydown",e=>{const d=keyMap[e.key];if(!d||!roundActive||questionOpen)return;e.preventDefault();moveState[d]=true;});document.addEventListener("keyup",e=>{const d=keyMap[e.key];if(!d)return;e.preventDefault();moveState[d]=false;if(movedSinceSend)sendPosition(true);});window.addEventListener("blur",stopMovement);
+  createBtn.addEventListener("click",createPublicRoom);joinBtn.addEventListener("click",joinRoom);creatorBtn.addEventListener("click",createCreatorRoom);roomInput.addEventListener("input",()=>roomInput.value=roomInput.value.replace(/\D/g,""));roomInput.addEventListener("keydown",e=>{if(e.key==="Enter")joinRoom();});creatorPassword.addEventListener("keydown",e=>{if(e.key==="Enter")createCreatorRoom();});nameContinueBtn.addEventListener("click",enterArena);playerNameInput.addEventListener("keydown",e=>{if(e.key==="Enter")enterArena();});startBtn.addEventListener("click",startRound);newRoundBtn.addEventListener("click",startRound);
 })();
 </script>
 </body>
