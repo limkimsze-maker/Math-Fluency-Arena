@@ -1,0 +1,24 @@
+name: Run Star Grab fluency patch
+
+on:
+  push:
+    paths:
+      - '.github/workflows/run-fluency-patch.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch index
+        run: python .github/scripts/patch_fluency.py
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Rename to Star Grab and add nine fluency modes"
+          git push
