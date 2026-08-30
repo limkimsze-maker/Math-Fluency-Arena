@@ -1,0 +1,95 @@
+name: Add teacher observer mode
+
+on:
+  push:
+    paths:
+      - '.github/workflows/add-teacher-observer.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add observer mode
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+
+          def rep(old,new,label):
+              global s
+              if old not in s:
+                  raise SystemExit(label+' marker not found')
+              s=s.replace(old,new,1)
+
+          css='''#hostGame .card{width:min(1100px,98vw)}.observerPanel{margin:14px 0 18px;padding:12px;border:3px solid var(--ink);border-radius:16px;background:#f7fbff}.observerToolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px}.observerToolbar select{min-width:min(360px,100%);padding:9px 11px;border:3px solid var(--ink);border-radius:11px;background:#fff;font-weight:900}.observerArena{position:relative;width:100%;height:min(480px,56vh);min-height:300px;overflow:hidden;border:4px solid var(--ink);border-radius:16px;background:#25364a}.observerWorld{position:absolute;left:0;top:0;background:linear-gradient(135deg,#a7df76,var(--grass));transform-origin:0 0;will-change:transform}.obsPlayer{position:absolute;width:66px;height:72px;transform:translate(-50%,-50%);z-index:12;pointer-events:none}.obsPlayer.red .ninja{color:var(--red)}.obsPlayer.blue .ninja{color:var(--blue)}.obsPlayer.left .ninja{transform:scaleX(-1)}.obsPlayer.selected .ninja{filter:drop-shadow(0 0 3px #fff) drop-shadow(0 0 8px #ffd84a)}.obsStar{position:absolute;transform:translate(-50%,-50%);font-size:42px;z-index:8;filter:drop-shadow(0 0 7px #fff) drop-shadow(0 0 10px #ffd84a)}.observerLabel{position:absolute;left:10px;bottom:10px;z-index:30;background:rgba(255,255,255,.94);border:2px solid var(--ink);border-radius:10px;padding:5px 8px;font-size:12px;font-weight:900}'''
+          rep('.recordsWrap{overflow:auto;',css+'\n.recordsWrap{overflow:auto;','CSS')
+
+          old='''<h2 id="hostPhase">Round in progress</h2><div id="hostGameRoster" class="roster"></div><h2>Player Ranking</h2>'''
+          new='''<h2 id="hostPhase">Round in progress</h2><div class="observerPanel"><div class="observerToolbar"><b>👁️ Teacher Observer</b><select id="observerSelect" aria-label="Observer view"><option value="overview">Whole Game</option></select></div><div id="observerArena" class="observerArena"><div id="observerWorld" class="observerWorld"></div><div id="observerLabel" class="observerLabel">Whole Game</div></div><div class="small">Whole Game shows the entire arena. Choose a pupil to follow that player. Observer mode has no game controls.</div></div><div id="hostGameRoster" class="roster"></div><h2>Player Ranking</h2>'''
+          rep(old,new,'host game')
+
+          old='''hostTimer=$("hostTimer"),hostBlueScore=$("hostBlueScore"),hostRedScore=$("hostRedScore"),hostPhase=$("hostPhase"),hostGameRoster=$("hostGameRoster"),hostRoundRanking=$("hostRoundRanking"),localRecords=$("localRecords"),clearRecordsBtn=$("clearRecords"),playAgain=$("playAgain"),mathModeSelect=$("mathModeSelect"),hostModeLabel=$("hostModeLabel"),hostMapPreview=$("hostMapPreview"),hostMapLabel=$("hostMapLabel"),'''
+          new='''hostTimer=$("hostTimer"),hostBlueScore=$("hostBlueScore"),hostRedScore=$("hostRedScore"),hostPhase=$("hostPhase"),hostGameRoster=$("hostGameRoster"),observerSelect=$("observerSelect"),observerArena=$("observerArena"),observerWorld=$("observerWorld"),observerLabel=$("observerLabel"),hostRoundRanking=$("hostRoundRanking"),localRecords=$("localRecords"),clearRecordsBtn=$("clearRecords"),playAgain=$("playAgain"),mathModeSelect=$("mathModeSelect"),hostModeLabel=$("hostModeLabel"),hostMapPreview=$("hostMapPreview"),hostMapLabel=$("hostMapLabel"),'''
+          rep(old,new,'DOM')
+
+          rep('hostTicker=null,facing="right";','hostTicker=null,facing="right",observerTarget="overview";','observer state')
+
+          old='''function payload(type="playerState"){return{type,id:playerId,name,team,x:Math.round(x),y:Math.round(y),carried,immuneUntil,boostUntil,facing,lastSeen:Date.now()}}'''
+          new='''function payload(type="playerState"){return{type,id:playerId,name,team,x:Math.round(x),y:Math.round(y),starX:Math.round(starX),starY:Math.round(starY),carried,immuneUntil,boostUntil,facing,lastSeen:Date.now()}}'''
+          rep(old,new,'payload')
+
+          old='''function upsert(d){if(!d.team)return;const p={...(players.get(d.id)||{}),id:d.id,name:safe(d.name)||"Player",team:d.team,x:Number(d.x)||100,y:Number(d.y)||100,carried:Number(d.carried)||0,immuneUntil:Number(d.immuneUntil)||0,boostUntil:Number(d.boostUntil)||0,facing:d.facing==="left"?"left":"right",lastSeen:Date.now()};players.set(d.id,p);if(!isHost)drawRemote(p)}'''
+          new='''function upsert(d){if(!d.team)return;const p={...(players.get(d.id)||{}),id:d.id,name:safe(d.name)||"Player",team:d.team,x:Number(d.x)||100,y:Number(d.y)||100,starX:Number(d.starX)||0,starY:Number(d.starY)||0,carried:Number(d.carried)||0,immuneUntil:Number(d.immuneUntil)||0,boostUntil:Number(d.boostUntil)||0,facing:d.facing==="left"?"left":"right",lastSeen:Date.now()};players.set(d.id,p);if(!isHost)drawRemote(p);else updateObserver()}'''
+          rep(old,new,'upsert')
+
+          marker='''function renderHostRoster(){if(!isHost)return;'''
+          observer_js=r'''function renderObserverMap(){if(!observerWorld)return;const p=mapProfiles[mapKey]||mapProfiles.compact;if(observerWorld.dataset.mapKey===mapKey)return;observerWorld.dataset.mapKey=mapKey;observerWorld.style.width=p.w+"px";observerWorld.style.height=p.h+"px";const paths=p.paths.map(a=>'<div class="path" style="'+mapStyle(a)+'"></div>').join("");const walls=p.walls.map(a=>'<div class="wall" style="'+mapStyle(a)+'"></div>').join("");const bushes=p.bushes.map(a=>'<div class="bush" style="left:'+a[0]+'%;top:'+a[1]+'%"></div>').join("");observerWorld.innerHTML=paths+'<div class="base blue">BLUE BASE</div><div class="base red">RED BASE</div>'+walls+bushes}
+function refreshObserverSelect(){if(!observerSelect)return;const keep=observerTarget;const list=[...players.values()].filter(p=>Date.now()-(p.lastSeen||0)<20000).sort((a,b)=>a.name.localeCompare(b.name));observerSelect.innerHTML='<option value="overview">Whole Game</option>'+list.map(p=>'<option value="'+p.id+'">'+(p.team==="red"?'🔴 ':'🔵 ')+safe(p.name)+'</option>').join("");if(keep!=="overview"&&list.some(p=>p.id===keep))observerSelect.value=keep;else{observerTarget="overview";observerSelect.value="overview"}}
+function observerPlayerEl(p){let el=observerWorld.querySelector('[data-observer-player="'+p.id+'"]');if(!el){el=document.createElement("div");el.className="obsPlayer";el.dataset.observerPlayer=p.id;el.innerHTML='<div class="ninja">'+ninjaSVG+'</div><div class="name"></div><div class="carry">⭐0</div>';observerWorld.appendChild(el)}el.classList.toggle("blue",p.team!=="red");el.classList.toggle("red",p.team==="red");el.classList.toggle("left",p.facing==="left");el.classList.toggle("selected",observerTarget===p.id);el.style.left=p.x+"px";el.style.top=p.y+"px";el.querySelector(".name").textContent=p.name;el.querySelector(".carry").textContent="⭐"+(p.carried||0);return el}
+function updateObserver(){if(!isHost||!observerArena||!observerWorld)return;renderObserverMap();const now=Date.now(),live=[...players.values()].filter(p=>now-(p.lastSeen||0)<20000);observerWorld.querySelectorAll('.obsPlayer').forEach(el=>{if(!live.some(p=>p.id===el.dataset.observerPlayer))el.remove()});live.forEach(observerPlayerEl);observerWorld.querySelectorAll('.obsStar').forEach(el=>el.remove());const vw=observerArena.clientWidth||700,vh=observerArena.clientHeight||400,w=mapW(),h=mapH();let scale,tx,ty,label="Whole Game";const target=observerTarget==="overview"?null:players.get(observerTarget);if(target&&now-(target.lastSeen||0)<20000){scale=Math.min(1,Math.max(.72,Math.min(vw/760,vh/470)));tx=vw/2-target.x*scale;ty=vh/2-target.y*scale;const minX=Math.min(0,vw-w*scale),minY=Math.min(0,vh-h*scale);tx=w*scale<=vw?(vw-w*scale)/2:Math.max(minX,Math.min(0,tx));ty=h*scale<=vh?(vh-h*scale)/2:Math.max(minY,Math.min(0,ty));label="Following: "+target.name+" · "+(target.team==="red"?"Red":"Blue")+" · Carry ⭐"+(target.carried||0);if(target.starX>0&&target.starY>0&&target.carried<LIMIT){const st=document.createElement("div");st.className="obsStar";st.textContent="⭐";st.style.left=target.starX+"px";st.style.top=target.starY+"px";observerWorld.appendChild(st)}}else{if(observerTarget!=="overview")observerTarget="overview";scale=Math.min(vw/w,vh/h);tx=(vw-w*scale)/2;ty=(vh-h*scale)/2}observerWorld.style.transform="translate3d("+Math.round(tx)+"px,"+Math.round(ty)+"px,0) scale("+scale+")";observerLabel.textContent=label}
+'''
+          if marker not in s: raise SystemExit('roster function marker not found')
+          s=s.replace(marker,observer_js+marker,1)
+
+          old='''function renderHostRoster(){if(!isHost)return;const now=Date.now();for(const[id,p]of players){if(now-(p.lastSeen||0)>20000)players.delete(id)}const list=[...players.values()].sort((a,b)=>a.team.localeCompare(b.team)||a.name.localeCompare(b.name));'''
+          new='''function renderHostRoster(){if(!isHost)return;const now=Date.now();for(const[id,p]of players){if(now-(p.lastSeen||0)>20000)players.delete(id)}refreshObserverSelect();updateObserver();const list=[...players.values()].sort((a,b)=>a.team.localeCompare(b.team)||a.name.localeCompare(b.name));'''
+          rep(old,new,'render roster')
+
+          old='''function beginRound(s,e,mode=mathMode,map=mapKey){setMathMode(mode);setMap(map);s=Number(s)||Date.now()+1000;e=Number(e)||s+ROUND;roundStart=s;roundEnd=e;roundActive=true;finished=false;resetRound(false);if(isHost){show($("hostGame"));hostPhase.textContent="Get ready…";hostTimer.textContent="3:00";playAgain.style.display="none"}else{'''
+          new='''function beginRound(s,e,mode=mathMode,map=mapKey){setMathMode(mode);setMap(map);s=Number(s)||Date.now()+1000;e=Number(e)||s+ROUND;roundStart=s;roundEnd=e;roundActive=true;finished=false;resetRound(false);if(isHost){show($("hostGame"));hostPhase.textContent="Get ready…";hostTimer.textContent="3:00";playAgain.style.display="none";renderObserverMap();refreshObserverSelect();requestAnimationFrame(updateObserver)}else{'''
+          rep(old,new,'begin round')
+
+          old='''function startHostTicker(){clearInterval(hostTicker);hostTicker=setInterval(()=>{renderHostRoster();sendHostSync()},1500)}'''
+          new='''function startHostTicker(){clearInterval(hostTicker);hostTicker=setInterval(()=>{renderHostRoster();updateObserver();sendHostSync()},1500)}'''
+          rep(old,new,'host ticker')
+
+          event='''playAgain.addEventListener("click",()=>{show($("hostLobby"));renderHostRoster();hostMsg.textContent="Ready for another round. Press Start when your class is ready."});'''
+          if event not in s: raise SystemExit('play again event not found')
+          s=s.replace(event,event+'\nif(observerSelect)observerSelect.addEventListener("change",()=>{observerTarget=observerSelect.value||"overview";updateObserver()});\nwindow.addEventListener("resize",()=>{if(isHost)updateObserver()});',1)
+
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Validate JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text(encoding='utf-8')
+          m=re.search(r'<script>\s*(.*?)\s*</script>',s,re.S)
+          if not m: raise SystemExit('No script found')
+          Path('/tmp/game.js').write_text(m.group(1),encoding='utf-8')
+          PY
+          node --check /tmp/game.js
+      - name: Commit update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Add teacher observer views"
+          git push
