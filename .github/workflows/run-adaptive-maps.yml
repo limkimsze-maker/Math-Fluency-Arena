@@ -1,4 +1,4 @@
-name: Run local player records update
+name: Run teacher observer update
 
 on:
   push:
@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Patch index
-        run: python .github/scripts/local_records.py
+        run: python .github/scripts/teacher_observer.py
       - name: Validate JavaScript
         run: |
           python3 - <<'PY'
@@ -31,5 +31,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Save creator player rankings locally"
+          git commit -m "Add teacher observer views"
           git push
