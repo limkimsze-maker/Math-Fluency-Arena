@@ -1,0 +1,50 @@
+name: Fix star spawn wall overlap
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-star-spawn.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix-star-spawn:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Keep stars away from walls
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+          old = '''function placeStar(){if(!teamAssigned)return;const m=85;starX=m+Math.random()*Math.max(20,arena.clientWidth-m*2);starY=m+Math.random()*Math.max(20,arena.clientHeight-m*2);star.style.left=starX+"px";star.style.top=starY+"px";star.style.display=carried<LIMIT?"block":"none"}'''
+          new = '''function starSpotSafe(px,py){const pad=38;return !wallRects().some(r=>px+pad>r.x&&px-pad<r.x+r.w&&py+pad>r.y&&py-pad<r.y+r.h)}
+          function placeStar(){if(!teamAssigned)return;const m=85,w=Math.max(20,arena.clientWidth-m*2),h=Math.max(20,arena.clientHeight-m*2);let sx=m,sy=m,found=false;for(let i=0;i<120;i++){const px=m+Math.random()*w,py=m+Math.random()*h;if(starSpotSafe(px,py)){sx=px;sy=py;found=true;break}}if(!found){const spots=[[.5,.5],[.5,.2],[.5,.8],[.35,.5],[.65,.5],[.25,.35],[.75,.65]];const safe=spots.find(([fx,fy])=>starSpotSafe(arena.clientWidth*fx,arena.clientHeight*fy));if(safe){sx=arena.clientWidth*safe[0];sy=arena.clientHeight*safe[1]}}starX=sx;starY=sy;star.style.left=starX+"px";star.style.top=starY+"px";star.style.display=carried<LIMIT?"block":"none"}'''
+
+          if 'function starSpotSafe(' in text:
+              print('Star-spawn safety fix is already present.')
+          elif old not in text:
+              raise SystemExit('Expected placeStar function was not found; refusing to alter unrelated code.')
+          else:
+              path.write_text(text.replace(old, new, 1), encoding='utf-8')
+              print('Patched index.html')
+          PY
+
+      - name: Commit the fix
+        shell: bash
+        run: |
+          if git diff --quiet -- index.html; then
+            echo "No change needed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Keep stars out of arena walls"
+          git push
