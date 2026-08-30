@@ -5,8 +5,9 @@ interface AppEnv {
   CREATOR_PASSWORD: string;
 }
 
-// Rooms are created on demand. There is deliberately no artificial
-// PUBLIC_ROOM_LIMIT. Cloudflare platform limits are the only capacity limit.
+// Up to 500 teacher/public rooms may exist at once.
+// The password-protected creator room is separate and does not count toward this limit.
+const PUBLIC_ROOM_LIMIT = 500;
 const ROOM_RELEASE_DELAY_MS = 2 * 60 * 1000;
 const RESERVATION_TIMEOUT_MS = 2 * 60 * 1000;
 
@@ -103,9 +104,21 @@ export class MyDurableObject extends DurableObject<AppEnv> {
     await this.cleanupReservations();
 
     // PUBLIC TEACHER: CREATE ROOM
-    // No fixed room-count check is performed here.
+    // Teacher/public rooms are capped at 500. Creator room is separate.
     if (path === "/capacity/reserve-public") {
       const publicRooms = await this.getPublicRooms();
+
+      if (Object.keys(publicRooms).length >= PUBLIC_ROOM_LIMIT) {
+        return jsonResponse(
+          {
+            ok: false,
+            full: true,
+            message: "All 500 teacher rooms are currently in use. Please try again later.",
+          },
+          429,
+        );
+      }
+
       const creatorRoom = await this.getCreatorRoom();
       const used = new Set(Object.keys(publicRooms));
       if (creatorRoom) used.add(creatorRoom.code);
