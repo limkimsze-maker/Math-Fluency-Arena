@@ -1,4 +1,4 @@
-name: Browser bot demo update
+name: Creator-only live hosting update
 
 on:
   push:
@@ -13,8 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Add browser-only bot demo
-        run: python .github/scripts/bot_demo.py
+      - name: Hide public room creation
+        run: python .github/scripts/device_compatibility.py
       - name: Validate JavaScript
         run: |
           python3 - <<'PY'
@@ -26,19 +26,18 @@ jobs:
           Path('/tmp/star-game.js').write_text(m.group(1),encoding='utf-8')
           PY
           node --check /tmp/star-game.js
-      - name: Confirm bot demo markers
+      - name: Confirm creator-only markers
         run: |
-          grep -q 'BOT_DEMO_V1' index.html
-          grep -q 'Try the Game vs Bot' index.html
-          grep -q 'OFFLINE BOT DEMO' index.html
+          grep -q 'Live class hosting is password protected.' index.html
+          grep -q '🔒 Open Live Class Room' index.html
+          if grep -q '<button id="create"' index.html; then
+            echo 'Public create button still present'
+            exit 1
+          fi
       - name: Commit changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          if git diff --cached --quiet; then
-            echo "No index changes needed"
-          else
-            git commit -m "Add browser-only Try vs Bot demo"
-            git push
-          fi
+          git commit -m "Hide live room creation behind creator password"
+          git push
