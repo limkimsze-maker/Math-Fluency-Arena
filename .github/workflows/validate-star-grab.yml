@@ -1,0 +1,21 @@
+name: Validate Star Grab JavaScript
+
+on:
+  push:
+    paths:
+      - '.github/workflows/validate-star-grab.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check JavaScript syntax
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text(encoding='utf-8')
+          js=s.split('<script>',1)[1].split('</script>',1)[0]
+          Path('/tmp/star-grab.js').write_text(js,encoding='utf-8')
+          PY
+          node --check /tmp/star-grab.js
