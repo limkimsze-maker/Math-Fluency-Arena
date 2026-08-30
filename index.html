@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Math Fluency Arena</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 18px;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #e9eef5;
+      color: #1f2937;
+    }
+    button, input { font: inherit; }
+    #lobby {
+      max-width: 520px;
+      margin: 32px auto;
+      padding: 28px;
+      background: white;
+      border: 3px solid #222;
+      border-radius: 20px;
+    }
+    h1 { margin: 0 0 10px; font-size: 36px; }
+    .small-note { color: #555; font-size: 14px; line-height: 1.4; }
+    .big-button {
+      width: 100%;
+      min-height: 58px;
+      margin: 8px 0;
+      padding: 10px;
+      border: 3px solid #222;
+      border-radius: 14px;
+      background: white;
+      font-size: 21px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .big-button:disabled { opacity: .55; cursor: wait; }
+    #createBtn { background: #eef7ff; }
+    #roomInput {
+      width: 190px;
+      padding: 12px;
+      margin: 12px;
+      border: 3px solid #222;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 6px;
+    }
+    #message {
+      min-height: 46px;
+      margin-top: 12px;
+      font-weight: 700;
+      line-height: 1.4;
+    }
+    #creatorArea {
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 2px solid #ddd;
+    }
+    #creatorArea summary { cursor: pointer; font-weight: 700; }
+    #creatorPassword {
+      width: 100%;
+      padding: 12px;
+      margin: 12px 0 4px;
+      border: 3px solid #222;
+      border-radius: 12px;
+      font-size: 18px;
+    }
+    #game { display: none; }
+    #status { margin: 8px; font-size: 20px; font-weight: 700; }
+    #roomDisplay { margin: 8px; font-size: 20px; }
+    #arena {
+      position: relative;
+      width: 800px;
+      height: 500px;
+      max-width: 94vw;
+      margin: 18px auto;
+      overflow: hidden;
+      background: white;
+      border: 5px solid #222;
+    }
+    .player {
+      position: absolute;
+      width: 45px;
+      height: 45px;
+      border-radius: 12px;
+    }
+    .me { background: royalblue; }
+    .other { background: crimson; }
+    #touchControls {
+      display: grid;
+      grid-template-columns: 70px 70px 70px;
+      grid-template-rows: 70px 70px;
+      gap: 8px;
+      justify-content: center;
+      margin: 20px auto;
+      touch-action: none;
+    }
+    #touchControls button {
+      width: 70px;
+      height: 70px;
+      border: 3px solid #222;
+      border-radius: 16px;
+      background: white;
+      font-size: 32px;
+      font-weight: 700;
+      touch-action: manipulation;
+    }
+    #upBtn { grid-column: 2; grid-row: 1; }
+    #leftBtn { grid-column: 1; grid-row: 2; }
+    #downBtn { grid-column: 2; grid-row: 2; }
+    #rightBtn { grid-column: 3; grid-row: 2; }
+    #instructions { font-size: 17px; line-height: 1.45; }
+    @media (max-width: 600px) {
+      body { padding: 8px; }
+      #lobby { margin: 14px auto; padding: 20px; }
+      h1 { font-size: 30px; }
+      #arena { height: 430px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="lobby">
+    <h1>⭐ Math Fluency Arena</h1>
+    <p>Create a Live Class room or join your teacher.</p>
+    <p class="small-note">Pilot capacity: 2 public classes at a time, plus 1 reserved creator room.</p>
+
+    <button id="createBtn" class="big-button">Create Live Class Room</button>
+
+    <hr>
+
+    <input id="roomInput" type="text" inputmode="numeric" maxlength="4" placeholder="0000" aria-label="4-digit room code">
+    <button id="joinBtn" class="big-button">Join Room</button>
+    <div id="message" aria-live="polite"></div>
+
+    <details id="creatorArea">
+      <summary>Creator Access</summary>
+      <p class="small-note">Reserved creator room. This remains available when public rooms are full.</p>
+      <input id="creatorPassword" type="password" placeholder="Creator password" autocomplete="current-password">
+      <button id="creatorBtn" class="big-button">Open Creator Room</button>
+    </details>
+  </div>
+
+  <div id="game">
+    <h1>⭐ Math Fluency Arena</h1>
+    <div id="status">Connecting...</div>
+    <div id="roomDisplay">Room: <strong id="roomCodeText"></strong></div>
+    <div id="arena" aria-label="Multiplayer test arena"></div>
+
+    <div id="touchControls" aria-label="Movement controls">
+      <button id="upBtn" aria-label="Move up">↑</button>
+      <button id="leftBtn" aria-label="Move left">←</button>
+      <button id="downBtn" aria-label="Move down">↓</button>
+      <button id="rightBtn" aria-label="Move right">→</button>
+    </div>
+
+    <div id="instructions">
+      Your player is BLUE. Other players are RED.<br>
+      Use WASD, arrow keys, or the touch controls.
+    </div>
+  </div>
+
+  <script>
+    const BACKEND = "https://live.limkimsze-maker.workers.dev";
+    const WS_BACKEND = "wss://live.limkimsze-maker.workers.dev";
+
+    const lobby = document.getElementById("lobby");
+    const game = document.getElementById("game");
+    const roomInput = document.getElementById("roomInput");
+    const messageEl = document.getElementById("message");
+    const creatorPassword = document.getElementById("creatorPassword");
+    const arena = document.getElementById("arena");
+    const statusEl = document.getElementById("status");
+    const roomCodeText = document.getElementById("roomCodeText");
+    const createBtn = document.getElementById("createBtn");
+    const joinBtn = document.getElementById("joinBtn");
+    const creatorBtn = document.getElementById("creatorBtn");
+
+    const playerId = crypto.randomUUID().substring(0, 8);
+    const players = new Map();
+    let x = 100;
+    let y = 100;
+    let socket = null;
+    let currentRoom = "";
+
+    function showMessage(text) {
+      messageEl.textContent = text;
+    }
+
+    function setBusy(button, busy) {
+      button.disabled = busy;
+    }
+
+    async function createPublicRoom() {
+      showMessage("Creating room...");
+      setBusy(createBtn, true);
+      try {
+        const response = await fetch(BACKEND + "/api/create-room", { method: "POST" });
+        const data = await response.json();
+        if (!response.ok) {
+          showMessage(data.full
+            ? "⭐ All public Live Class rooms are currently in use. Please try again in a few minutes."
+            : (data.message || "Unable to create room."));
+          return;
+        }
+        startRoom(data.code);
+      } catch (error) {
+        console.error(error);
+        showMessage("Unable to connect to the Live Class service.");
+      } finally {
+        setBusy(createBtn, false);
+      }
+    }
+
+    async function joinRoom() {
+      const code = roomInput.value.replace(/[^0-9]/g, "").slice(0, 4);
+      if (code.length !== 4) {
+        showMessage("Please enter a 4-digit room code.");
+        return;
+      }
+      showMessage("Checking room...");
+      setBusy(joinBtn, true);
+      try {
+        const response = await fetch(BACKEND + "/api/join-room?code=" + encodeURIComponent(code));
+        if (!response.ok) {
+          showMessage("Room " + code + " is not active. Check the code with your teacher.");
+          return;
+        }
+        startRoom(code);
+      } catch (error) {
+        console.error(error);
+        showMessage("Unable to check the room.");
+      } finally {
+        setBusy(joinBtn, false);
+      }
+    }
+
+    async function createCreatorRoom() {
+      const password = creatorPassword.value;
+      if (!password) {
+        showMessage("Enter the creator password.");
+        return;
+      }
+      showMessage("Opening reserved creator room...");
+      setBusy(creatorBtn, true);
+      try {
+        const response = await fetch(BACKEND + "/api/creator-room", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ password })
+        });
+        const data = await response.json();
+        creatorPassword.value = "";
+        if (!response.ok) {
+          showMessage(data.message || "Creator access denied.");
+          return;
+        }
+        startRoom(data.code);
+      } catch (error) {
+        console.error(error);
+        showMessage("Unable to open creator room.");
+      } finally {
+        setBusy(creatorBtn, false);
+      }
+    }
+
+    function startRoom(roomCode) {
+      currentRoom = String(roomCode);
+      lobby.style.display = "none";
+      game.style.display = "block";
+      roomCodeText.textContent = currentRoom;
+      drawPlayer(playerId, x, y, true);
+      connectToRoom();
+    }
+
+    function connectToRoom() {
+      socket = new WebSocket(WS_BACKEND + "/room/" + encodeURIComponent(currentRoom));
+
+      socket.addEventListener("open", () => {
+        statusEl.textContent = "CONNECTED ✓";
+        sendPosition();
+      });
+
+      socket.addEventListener("message", event => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === "move" && data.id !== playerId) {
+            drawPlayer(data.id, data.x, data.y, false);
+          }
+        } catch (error) {
+          console.error(error);
+        }
+      });
+
+      socket.addEventListener("close", () => {
+        statusEl.textContent = "DISCONNECTED";
+      });
+
+      socket.addEventListener("error", () => {
+        statusEl.textContent = "CONNECTION ERROR";
+      });
+    }
+
+    function makePlayer(id, mine = false) {
+      const div = document.createElement("div");
+      div.className = "player " + (mine ? "me" : "other");
+      div.dataset.id = id;
+      arena.appendChild(div);
+      players.set(id, div);
+      return div;
+    }
+
+    function drawPlayer(id, px, py, mine = false) {
+      let player = players.get(id);
+      if (!player) player = makePlayer(id, mine);
+      player.style.left = px + "px";
+      player.style.top = py + "px";
+    }
+
+    function sendPosition() {
+      if (!socket || socket.readyState !== WebSocket.OPEN) return;
+      socket.send(JSON.stringify({ type: "move", id: playerId, x, y }));
+    }
+
+    function movePlayer(dx, dy) {
+      x += dx;
+      y += dy;
+      x = Math.max(0, Math.min(arena.clientWidth - 45, x));
+      y = Math.max(0, Math.min(arena.clientHeight - 45, y));
+      drawPlayer(playerId, x, y, true);
+      sendPosition();
+    }
+
+    createBtn.addEventListener("click", createPublicRoom);
+    joinBtn.addEventListener("click", joinRoom);
+    creatorBtn.addEventListener("click", createCreatorRoom);
+
+    roomInput.addEventListener("input", () => {
+      roomInput.value = roomInput.value.replace(/[^0-9]/g, "");
+    });
+    roomInput.addEventListener("keydown", event => {
+      if (event.key === "Enter") joinRoom();
+    });
+    creatorPassword.addEventListener("keydown", event => {
+      if (event.key === "Enter") createCreatorRoom();
+    });
+
+    document.addEventListener("keydown", event => {
+      if (game.style.display !== "block") return;
+      const speed = 12;
+      switch (event.key.toLowerCase()) {
+        case "w":
+        case "arrowup": movePlayer(0, -speed); break;
+        case "s":
+        case "arrowdown": movePlayer(0, speed); break;
+        case "a":
+        case "arrowleft": movePlayer(-speed, 0); break;
+        case "d":
+        case "arrowright": movePlayer(speed, 0); break;
+        default: return;
+      }
+      event.preventDefault();
+    });
+
+    document.getElementById("upBtn").addEventListener("pointerdown", () => movePlayer(0, -20));
+    document.getElementById("downBtn").addEventListener("pointerdown", () => movePlayer(0, 20));
+    document.getElementById("leftBtn").addEventListener("pointerdown", () => movePlayer(-20, 0));
+    document.getElementById("rightBtn").addEventListener("pointerdown", () => movePlayer(20, 0));
+  </script>
+</body>
+</html>
