@@ -77,6 +77,7 @@ button,input,select{max-width:100%}button,#controls{-webkit-user-select:none;use
 
 @media(prefers-reduced-motion:reduce){.star,.player.immune .ninja,#boostBtn.ready{animation:none!important}.player{transition:none}}
 
+.siteCredit{width:100%;text-align:center;padding:12px 8px 18px;font-size:13px;font-weight:800;color:#66758d}
 </style>
 </head>
 <body>
@@ -95,6 +96,7 @@ button,input,select{max-width:100%}button,#controls{-webkit-user-select:none;use
 <div id="results" class="overlay"><div class="box"><h2 id="winner">Round Over!</h2><p id="finalScore"></p><div class="stats"><div>Correct<strong id="sCorrect">0</strong></div><div>Accuracy<strong id="sAccuracy">0%</strong></div><div>Best streak<strong id="sStreak">0</strong></div><div>Stars collected<strong id="sCollected">0</strong></div><div>Stars grabbed<strong id="sStolen">0</strong></div><div>Stars banked<strong id="sBanked">0</strong></div></div><div class="small">Waiting for the teacher to start another round.</div></div></div></div>
 <div id="controls"><button id="up">▲</button><button id="left">◀</button><button id="down">▼</button><button id="right">▶</button></div><button id="boostBtn" type="button">⚡ SPEED BOOST (7s)</button><div class="note">Move to your ⭐, solve, carry up to 3, tag an opponent and solve correctly to grab one, then bank at your base. Solve 3 personal stars correctly in a row to earn a 7-second Speed Boost.</div></section>
 
+<footer class="siteCredit">Created by Lim Kim Sze</footer>
 <script>
 (()=>{
 const BACKEND="https://live.limkimsze-maker.workers.dev",WS="wss://live.limkimsze-maker.workers.dev",ROUND=180000,START_DELAY=3500,SEND_EVERY=200,SPEED=190,BOOST_MULT=1.6,BOOST_MS=7000,BOOST_STREAK_TARGET=3,LIMIT=3,TAG=54,IMMUNE=2000,BASE=.115;
