@@ -1,0 +1,61 @@
+from pathlib import Path
+import re
+
+p=Path('index.html')
+s=p.read_text(encoding='utf-8')
+
+def rep(old,new,count=1):
+    global s
+    if old not in s:
+        raise SystemExit('Expected text not found: '+old[:140])
+    s=s.replace(old,new,count)
+
+rep("</select><h2>Who's in?</h2>", "</select><div class=\"small\">Map: <b id=\"hostMapPreview\">Compact · 0 players</b> (automatic)</div><h2>Who's in?</h2>")
+rep('<div class="small">Math: <b id="hostModeLabel">Addition within 20</b></div><div id="hostTimer">', '<div class="small">Math: <b id="hostModeLabel">Addition within 20</b></div><div class="small">Map: <b id="hostMapLabel">Compact</b></div><div id="hostTimer">')
+rep('<div id="modeLabel" class="small">Addition within 20</div><div>Room <span id="roomCode"></span></div>', '<div id="modeLabel" class="small">Addition within 20</div><div id="mapLabel" class="small">Compact map</div><div>Room <span id="roomCode"></span></div>')
+rep('mathModeSelect=$("mathModeSelect"),hostModeLabel=$("hostModeLabel"),', 'mathModeSelect=$("mathModeSelect"),hostModeLabel=$("hostModeLabel"),hostMapPreview=$("hostMapPreview"),hostMapLabel=$("hostMapLabel"),')
+rep('roomCode=$("roomCode"),modeLabel=$("modeLabel"),teamBadge=', 'roomCode=$("roomCode"),modeLabel=$("modeLabel"),mapLabel=$("mapLabel"),teamBadge=')
+rep('stealTargetName="",mathMode="add20",roundStart=0', 'stealTargetName="",mathMode="add20",mapKey="compact",roundStart=0')
+
+anchor='function show(s){screens.forEach(a=>a.classList.remove("active"));s.classList.add("active")}'
+maps=r'''const mapProfiles={
+ compact:{name:"Compact",w:1300,h:820,paths:[],walls:[[22,18,15,9],[63,73,15,9],[24,66,9,16],[67,18,9,16]],bushes:[[38,25],[62,70]]},
+ standard:{name:"Standard",w:1700,h:1050,paths:[[14,20,72,9]],walls:[[16,13,13,8],[31,68,10,13],[43,27,10,9],[71,79,13,8],[59,19,10,13],[47,64,10,9]],bushes:[[24,39],[40,70],[76,57],[60,23]]},
+ large:{name:"Large",w:2100,h:1300,paths:[[13,20,74,9],[13,71,74,9]],walls:[[12,11,12,7],[28,28,10,9],[17,67,8,14],[41,10,12,7],[62,63,10,9],[75,19,8,14],[76,82,12,7],[47,83,12,7],[46,43,8,8]],bushes:[[21,37],[34,72],[47,27],[79,55],[66,24],[53,70]]},
+ mega:{name:"Mega",w:2500,h:1550,paths:[[12,20,76,9],[12,71,76,9]],walls:[[11,10,12,7],[27,27,10,9],[15,68,8,14],[39,9,12,7],[42,64,9,11],[63,64,10,9],[77,18,8,14],[77,83,12,7],[49,84,12,7],[49,25,9,11],[25,52,8,8],[67,40,8,8]],bushes:[[20,36],[31,72],[45,31],[52,76],[69,24],[80,56],[55,65],[48,18]]}
+};
+function chooseMapForCount(n){return n<=8?"compact":n<=16?"standard":n<=24?"large":"mega"}
+function mapW(){return mapProfiles[mapKey].w}function mapH(){return mapProfiles[mapKey].h}
+function mapStyle(a){return"left:"+a[0]+"%;top:"+a[1]+"%;width:"+a[2]+"%;height:"+a[3]+"%"}
+function renderMap(key){const p=mapProfiles[key]||mapProfiles.compact;if(world.dataset.mapKey===key)return;world.dataset.mapKey=key;world.style.width=p.w+"px";world.style.height=p.h+"px";world.querySelectorAll(".path,.base,.wall,.bush").forEach(el=>el.remove());let html='<div class="path p1"></div><div class="path p2"></div><div class="base blue">BLUE BASE</div><div class="base red">RED BASE</div>';p.paths.forEach(a=>html+='<div class="path" style="'+mapStyle(a)+'"></div>');p.walls.forEach(a=>html+='<div class="wall" style="'+mapStyle(a)+'"></div>');p.bushes.forEach(a=>html+='<div class="bush" style="left:'+a[0]+'%;top:'+a[1]+'%"></div>');world.insertAdjacentHTML("afterbegin",html)}
+function setMap(key){mapKey=mapProfiles[key]?key:"compact";renderMap(mapKey);const p=mapProfiles[mapKey];if(hostMapLabel)hostMapLabel.textContent=p.name;if(mapLabel)mapLabel.textContent=p.name+" map"}
+function spawnPlayer(){const w=mapW(),h=mapH(),sx=team==="blue"?w*.10:w*.90;for(let i=0;i<50;i++){const sy=h*(.22+Math.random()*.56);if(!blocked(sx,sy)){x=sx;y=sy;return}}x=sx;y=h*.5}
+'''
+rep(anchor,maps+anchor)
+rep('if(d.type==="startRound"){beginRound(d.startAt,d.endAt,d.mathMode);return}', 'if(d.type==="startRound"){beginRound(d.startAt,d.endAt,d.mathMode,d.mapKey);return}')
+rep('const rec={id:d.id,name:n,team:assigned,x:assigned==="blue"?320:2080,y:750,carried:0,immuneUntil:0,lastSeen:Date.now()};', 'const rec={id:d.id,name:n,team:assigned,x:assigned==="blue"?mapW()*.10:mapW()*.90,y:mapH()*.5,carried:0,immuneUntil:0,lastSeen:Date.now()};')
+rep('teamAssigned=true;x=team==="blue"?world.clientWidth*.14:world.clientWidth*.86;y=world.clientHeight*(.25+Math.random()*.5);', 'teamAssigned=true;spawnPlayer();')
+
+pattern=r'function renderHostRoster\(\)\{.*?\}\nfunction startByHost'
+replacement='''function renderHostRoster(){if(!isHost)return;const now=Date.now();for(const[id,p]of players){if(now-(p.lastSeen||0)>20000)players.delete(id)}const list=[...players.values()].sort((a,b)=>a.team.localeCompare(b.team)||a.name.localeCompare(b.name));const bc=list.filter(p=>p.team==="blue").length,rc=list.filter(p=>p.team==="red").length;playerCount.textContent=list.length;blueCount.textContent=bc;redCount.textContent=rc;if(!roundActive)setMap(chooseMapForCount(list.length));hostMapPreview.textContent=mapProfiles[mapKey].name+" · "+list.length+" player"+(list.length===1?"":"s");startRoundBtn.disabled=list.length<1;hostMsg.textContent=list.length?"Everyone in? Press Start when ready.":"The button activates when at least one pupil is ready.";const html=list.length?list.map(p=>'<div class="rosterRow"><div class="dot '+p.team+'"></div><b>'+safe(p.name)+'</b><span class="pill '+p.team+'">'+p.team.toUpperCase()+'</span></div>').join(""):'<div class="small">Waiting for pupils to join…</div>';roster.innerHTML=html;hostGameRoster.innerHTML=html}
+function startByHost'''
+s2,n=re.subn(pattern,replacement,s,count=1,flags=re.S)
+if n!=1:
+    raise SystemExit('renderHostRoster replacement failed')
+s=s2
+
+rep('function startByHost(){if(!isHost||startRoundBtn.disabled)return;setMathMode(mathModeSelect.value);const s=Date.now()+START_DELAY,e=s+ROUND;resetRound();roundStart=s;roundEnd=e;send({type:"startRound",startAt:s,endAt:e,mathMode});beginRound(s,e,mathMode)}', 'function startByHost(){if(!isHost||startRoundBtn.disabled)return;setMathMode(mathModeSelect.value);const n=[...players.values()].filter(p=>Date.now()-(p.lastSeen||0)<15000).length;setMap(chooseMapForCount(n));const s=Date.now()+START_DELAY,e=s+ROUND;resetRound();roundStart=s;roundEnd=e;send({type:"startRound",startAt:s,endAt:e,mathMode,mapKey});beginRound(s,e,mathMode,mapKey)}')
+rep('function beginRound(s,e,mode=mathMode){setMathMode(mode);s=Number(s)||Date.now()+1000;', 'function beginRound(s,e,mode=mathMode,map=mapKey){setMathMode(mode);setMap(map);s=Number(s)||Date.now()+1000;')
+rep('}else{results.classList.remove("open");waiting.classList.add("open");waitTitle.textContent="Get ready!";', '}else{spawnPlayer();placeStar();drawSelf();sendState();results.classList.remove("open");waiting.classList.add("open");waitTitle.textContent="Get ready!";')
+rep('send({type:"hostSync",blue,red,roundStart,roundEnd,mathMode,active:', 'send({type:"hostSync",blue,red,roundStart,roundEnd,mathMode,mapKey,active:')
+rep('function applyHostSync(d){if(isHost)return;if(d.mathMode)setMathMode(d.mathMode);blue=', 'function applyHostSync(d){if(isHost)return;if(d.mathMode)setMathMode(d.mathMode);if(d.mapKey)setMap(d.mapKey);blue=')
+rep('beginRound(s,e,d.mathMode||mathMode)}', 'beginRound(s,e,d.mathMode||mathMode,d.mapKey||mapKey)}')
+rep('const vw=arena.clientWidth,vh=arena.clientHeight,ww=world.clientWidth,wh=world.clientHeight,', 'const vw=arena.clientWidth,vh=arena.clientHeight,ww=mapW(),wh=mapH(),')
+rep('const m=100,w=Math.max(20,world.clientWidth-m*2),h=Math.max(20,world.clientHeight-m*2);', 'const m=90,w=Math.max(20,mapW()-m*2),h=Math.max(20,mapH()-m*2);')
+rep('starSpotSafe(world.clientWidth*fx,world.clientHeight*fy)', 'starSpotSafe(mapW()*fx,mapH()*fy)')
+rep('sx=world.clientWidth*safe[0];sy=world.clientHeight*safe[1]', 'sx=mapW()*safe[0];sy=mapH()*safe[1]')
+rep('const w=world.clientWidth,inBase=', 'const w=mapW(),inBase=')
+rep('const nx=Math.max(28,Math.min(world.clientWidth-28,x+dx*SPEED*dt)),ny=Math.max(34,Math.min(world.clientHeight-30,y+dy*SPEED*dt));', 'const nx=Math.max(28,Math.min(mapW()-28,x+dx*SPEED*dt)),ny=Math.max(34,Math.min(mapH()-30,y+dy*SPEED*dt));')
+rep('window.addEventListener("beforeunload",()=>{if(!isHost&&teamAssigned)send({type:"playerLeft",id:playerId})})', 'setMap("compact");window.addEventListener("beforeunload",()=>{if(!isHost&&teamAssigned)send({type:"playerLeft",id:playerId})})')
+
+p.write_text(s,encoding='utf-8')
