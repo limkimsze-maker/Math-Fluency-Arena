@@ -1,0 +1,77 @@
+name: Fix star spawn safety
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-star-spawn.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch star spawning
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          pattern = r'function starSpotSafe\(px,py\)\{.*?\}\nfunction placeStar\(\)\{.*?\}\nfunction checkStar'
+          replacement = r'''function starSpotSafe(px,py){
+            const pad=48,bankGap=Math.max(210,mapW()*.18),profile=mapProfiles[mapKey]||mapProfiles.compact;
+            if(px<bankGap||px>mapW()-bankGap||py<70||py>mapH()-70)return false;
+            for(const a of profile.walls){
+              const rx=mapW()*a[0]/100,ry=mapH()*a[1]/100,rw=mapW()*a[2]/100,rh=mapH()*a[3]/100;
+              if(px+pad>rx&&px-pad<rx+rw&&py+pad>ry&&py-pad<ry+rh)return false;
+            }
+            return true
+          }
+          function placeStar(){
+            if(!teamAssigned)return;
+            const side=Math.max(210,mapW()*.18),top=90,minTravel=Math.min(430,Math.max(180,Math.min(mapW(),mapH())*.22));
+            let sx=mapW()*.5,sy=mapH()*.5,found=false;
+            for(let i=0;i<220;i++){
+              const px=side+Math.random()*Math.max(20,mapW()-side*2),py=top+Math.random()*Math.max(20,mapH()-top*2);
+              if(Math.hypot(px-x,py-y)>=minTravel&&starSpotSafe(px,py)){sx=px;sy=py;found=true;break}
+            }
+            if(!found){
+              const step=70;
+              outer:for(let py=top;py<=mapH()-top;py+=step){
+                for(let px=side;px<=mapW()-side;px+=step){
+                  if(starSpotSafe(px,py)){sx=px;sy=py;found=true;break outer}
+                }
+              }
+            }
+            if(!found){
+              sx=mapW()*.5;sy=mapH()*.5;
+              for(let radius=70;radius<Math.max(mapW(),mapH())&&!found;radius+=70){
+                for(let angle=0;angle<Math.PI*2;angle+=Math.PI/8){
+                  const px=Math.max(side,Math.min(mapW()-side,sx+Math.cos(angle)*radius));
+                  const py=Math.max(top,Math.min(mapH()-top,sy+Math.sin(angle)*radius));
+                  if(starSpotSafe(px,py)){sx=px;sy=py;found=true;break}
+                }
+              }
+            }
+            starX=sx;starY=sy;star.style.left=starX+"px";star.style.top=starY+"px";star.style.display=carried<LIMIT?"block":"none"
+          }
+          function checkStar'''
+
+          s2,n = re.subn(pattern,replacement,s,count=1,flags=re.S)
+          if n != 1:
+              raise SystemExit('Could not find star spawn functions to patch')
+
+          p.write_text(s2,encoding='utf-8')
+          PY
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Prevent stars from spawning inside walls"
+          git push
