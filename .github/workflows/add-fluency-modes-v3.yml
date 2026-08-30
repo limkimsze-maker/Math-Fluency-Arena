@@ -1,0 +1,74 @@
+name: Add Star Grab fluency modes v3
+
+on:
+  push:
+    paths:
+      - '.github/workflows/add-fluency-modes-v3.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch game
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          def rep(old, new, count=1):
+              global s
+              if old not in s:
+                  raise SystemExit('Expected text not found: ' + old[:160])
+              s = s.replace(old, new, count)
+
+          rep('<title>Math Star Rush</title>', '<title>Star Grab</title>')
+          rep('<h1>⭐ Math Star Rush</h1><div class="tag">Solve. Carry. Dodge. Bank.</div>', '<h1>⭐ Star Grab</h1><div class="tag">Solve. Grab. Bank. Win.</div>')
+          rep('<h1>⭐ Math Star Rush</h1><div class="room">Room <span id="hostGameCode"></span></div>', '<h1>⭐ Star Grab</h1><div class="room">Room <span id="hostGameCode"></span></div><div class="small">Math: <b id="hostModeLabel">Addition within 20</b></div>')
+          rep('<div>⭐ STAR RUSH</div><div id="timer" class="timer">3:00</div><div>Room <span id="roomCode"></span></div>', '<div>⭐ STAR GRAB</div><div id="timer" class="timer">3:00</div><div id="modeLabel" class="small">Addition within 20</div><div>Room <span id="roomCode"></span></div>')
+          rep('Stars stolen<strong id="sStolen">0</strong>', 'Stars grabbed<strong id="sStolen">0</strong>')
+          rep('tag an opponent and solve correctly to steal one, then bank at your base.', 'tag an opponent and solve correctly to grab one, then bank at your base.')
+          rep('.note{text-align:center;font-size:12px;color:#63718a;margin-top:6px}\n@media', '.note{text-align:center;font-size:12px;color:#63718a;margin-top:6px}.modeSelect{width:100%;padding:12px;border:3px solid var(--ink);border-radius:13px;background:#fff;font-size:17px;font-weight:800;margin:4px 0 12px}\n@media')
+
+          old_lobby = "<div class=\"hostGrid\"><div class=\"hostStat\">Players<strong id=\"playerCount\">0</strong></div><div class=\"hostStat\">Teams<strong><span id=\"blueCount\">0</span> 🔵 · 🔴 <span id=\"redCount\">0</span></strong></div></div><h2>Who's in?</h2>"
+          new_lobby = """<div class="hostGrid"><div class="hostStat">Players<strong id="playerCount">0</strong></div><div class="hostStat">Teams<strong><span id="blueCount">0</span> 🔵 · 🔴 <span id="redCount">0</span></strong></div></div><h2>Math Fluency</h2><select id="mathModeSelect" class="modeSelect"><option value="add20">Addition within 20</option><option value="sub20">Subtraction within 20</option><option value="mul5">Multiplication: ×2 to ×5 tables</option><option value="div5">Division: ÷2 to ÷5 tables</option><option value="mul10">Multiplication: ×2 to ×10 tables</option><option value="div10">Division: ÷2 to ÷10 tables</option><option value="mul12">Multiplication: ×2 to ×12 tables</option><option value="div12">Division: ÷2 to ÷12 tables</option><option value="mixed">Mixed: + − × ÷</option></select><h2>Who's in?</h2>"""
+          rep(old_lobby, new_lobby)
+
+          rep('hostTimer=$("hostTimer"),hostBlueScore=$("hostBlueScore"),hostRedScore=$("hostRedScore"),hostPhase=$("hostPhase"),hostGameRoster=$("hostGameRoster"),playAgain=$("playAgain"),', 'hostTimer=$("hostTimer"),hostBlueScore=$("hostBlueScore"),hostRedScore=$("hostRedScore"),hostPhase=$("hostPhase"),hostGameRoster=$("hostGameRoster"),playAgain=$("playAgain"),mathModeSelect=$("mathModeSelect"),hostModeLabel=$("hostModeLabel"),')
+          rep('nameRoom=$("nameRoom"),nameMsg=$("nameMsg"),playerName=$("playerName"),enterBtn=$("enter"),roomCode=$("roomCode"),teamBadge=$("teamBadge"),waitTitle=$("waitTitle"),waitText=$("waitText"),startCount=$("startCount"),', 'nameRoom=$("nameRoom"),nameMsg=$("nameMsg"),playerName=$("playerName"),enterBtn=$("enter"),roomCode=$("roomCode"),modeLabel=$("modeLabel"),teamBadge=$("teamBadge"),waitTitle=$("waitTitle"),waitText=$("waitText"),startCount=$("startCount"),')
+          rep('questionMode="star",stealTargetId=null,stealTargetName="",roundStart=0', 'questionMode="star",stealTargetId=null,stealTargetName="",mathMode="add20",roundStart=0')
+          rep('if(d.type==="startRound"){beginRound(d.startAt,d.endAt);return}', 'if(d.type==="startRound"){beginRound(d.startAt,d.endAt,d.mathMode);return}')
+          rep('function startByHost(){if(!isHost||startRoundBtn.disabled)return;const s=Date.now()+START_DELAY,e=s+ROUND;resetRound();roundStart=s;roundEnd=e;send({type:"startRound",startAt:s,endAt:e});beginRound(s,e)}', 'function startByHost(){if(!isHost||startRoundBtn.disabled)return;setMathMode(mathModeSelect.value);const s=Date.now()+START_DELAY,e=s+ROUND;resetRound();roundStart=s;roundEnd=e;send({type:"startRound",startAt:s,endAt:e,mathMode});beginRound(s,e,mathMode)}')
+          rep('function beginRound(s,e){s=Number(s)||Date.now()+1000;e=Number(e)||s+ROUND;roundStart=s;roundEnd=e;roundActive=true;finished=false;resetRound(false);', 'function beginRound(s,e,mode=mathMode){setMathMode(mode);s=Number(s)||Date.now()+1000;e=Number(e)||s+ROUND;roundStart=s;roundEnd=e;roundActive=true;finished=false;resetRound(false);')
+          rep('function sendHostSync(){if(!isHost)return;send({type:"hostSync",blue,red,roundStart,roundEnd,active:roundActive&&!finished,finished,ts:Date.now()})}', 'function sendHostSync(){if(!isHost)return;send({type:"hostSync",blue,red,roundStart,roundEnd,mathMode,active:roundActive&&!finished,finished,ts:Date.now()})}')
+          rep('function applyHostSync(d){if(isHost)return;blue=Math.max(blue,Number(d.blue)||0);red=Math.max(red,Number(d.red)||0);score();const e=Number(d.roundEnd)||0,s=Number(d.roundStart)||0;if(d.active&&e>Date.now()&&!roundActive)beginRound(s,e)}', 'function applyHostSync(d){if(isHost)return;if(d.mathMode)setMathMode(d.mathMode);blue=Math.max(blue,Number(d.blue)||0);red=Math.max(red,Number(d.red)||0);score();const e=Number(d.roundEnd)||0,s=Number(d.roundStart)||0;if(d.active&&e>Date.now()&&!roundActive)beginRound(s,e,d.mathMode||mathMode)}')
+
+          old_makeq = 'function makeQ(){const a=2+Math.floor(Math.random()*9),b=2+Math.floor(Math.random()*9),correct=a*b,o=new Set([correct]),cand=[correct+a,correct-a,correct+b,correct-b,correct+1,correct-1,correct+2,correct-2];while(o.size<4){const v=cand[Math.floor(Math.random()*cand.length)];if(v>0)o.add(v)}return{text:a+" × "+b,correct,options:[...o].sort(()=>Math.random()-.5)}}'
+          new_makeq = '\n'.join([
+              'const modeNames={add20:"Addition within 20",sub20:"Subtraction within 20",mul5:"Multiplication: ×2 to ×5 tables",div5:"Division: ÷2 to ÷5 tables",mul10:"Multiplication: ×2 to ×10 tables",div10:"Division: ÷2 to ÷10 tables",mul12:"Multiplication: ×2 to ×12 tables",div12:"Division: ÷2 to ÷12 tables",mixed:"Mixed: + − × ÷"};',
+              'function setMathMode(mode){mathMode=modeNames[mode]?mode:"add20";if(mathModeSelect)mathModeSelect.value=mathMode;if(hostModeLabel)hostModeLabel.textContent=modeNames[mathMode];if(modeLabel)modeLabel.textContent=modeNames[mathMode];if(teamAssigned&&!roundActive&&!isHost)waitText.textContent="Waiting for your teacher to start. Math: "+modeNames[mathMode]}',
+              'function rand(min,max){return min+Math.floor(Math.random()*(max-min+1))}',
+              'function makeOptions(correct,minValue,maxValue){const o=new Set([correct]),offsets=[1,-1,2,-2,3,-3,5,-5,10,-10];for(const d of offsets){const v=correct+d;if(v>=minValue&&v<=maxValue)o.add(v);if(o.size>=4)break}while(o.size<4)o.add(rand(minValue,maxValue));return[...o].sort(()=>Math.random()-.5)}',
+              'function makeQ(){let mode=mathMode;if(mode==="mixed")mode=["add20","sub20","mul12","div12"][rand(0,3)];let a,b,c,text,min=0,max=20;if(mode==="add20"){a=rand(0,20);b=rand(0,20-a);c=a+b;text=a+" + "+b}else if(mode==="sub20"){a=rand(0,20);b=rand(0,a);c=a-b;text=a+" − "+b}else if(mode==="mul5"||mode==="mul10"||mode==="mul12"){const top=mode==="mul5"?5:mode==="mul10"?10:12;a=rand(2,top);b=rand(1,12);c=a*b;text=a+" × "+b;min=1;max=top*12}else{const top=mode==="div5"?5:mode==="div10"?10:12;a=rand(2,top);c=rand(1,12);b=a*c;text=b+" ÷ "+a;min=1;max=12}return{text,correct:c,options:makeOptions(c,min,max)}}'
+          ])
+          rep(old_makeq, new_makeq)
+
+          rep('qPrompt.textContent=mode==="steal"?"Solve correctly to steal 1 ⭐ from "+(stealTargetName||"this opponent"):"Solve to pick up this star";', 'qPrompt.textContent=mode==="steal"?"Solve correctly to grab 1 ⭐ from "+(stealTargetName||"this opponent"):"Solve to pick up this star";')
+          rep('feedback.textContent="Correct! ⚡ Steal unlocked!";', 'feedback.textContent="Correct! ⚡ Grab unlocked!";')
+          rep('feedback.textContent=mode==="steal"?"No steal. Answer: "+c:', 'feedback.textContent=mode==="steal"?"No grab. Answer: "+c:')
+          rep('flash("💫 "+safe(d.taggerName||"Opponent")+" solved correctly and stole 1 star!")', 'flash("💫 "+safe(d.taggerName||"Opponent")+" solved correctly and grabbed 1 star!")')
+          rep('flash("⚡ You stole 1 star from "+safe(d.targetName||"an opponent")+"!")', 'flash("⚡ You grabbed 1 star from "+safe(d.targetName||"an opponent")+"!")')
+          rep('startRoundBtn.addEventListener("click",startByHost);playAgain.addEventListener', 'startRoundBtn.addEventListener("click",startByHost);mathModeSelect.addEventListener("change",()=>setMathMode(mathModeSelect.value));playAgain.addEventListener')
+
+          p.write_text(s, encoding='utf-8')
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Rename to Star Grab and add nine fluency modes"
+          git push
