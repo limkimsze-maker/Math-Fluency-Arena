@@ -1,0 +1,66 @@
+name: Build large 30-player Star Grab map
+
+on:
+  push:
+    paths:
+      - '.github/workflows/large-30-player-map.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enlarge arena and add camera follow
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          def rep(old, new, count=1):
+              global s
+              if old not in s:
+                  raise SystemExit('Expected text not found: ' + old[:140])
+              s = s.replace(old, new, count)
+
+          rep('#arena{position:relative;width:min(1120px,97vw);aspect-ratio:16/9;min-height:350px;max-height:630px;margin:auto;overflow:hidden;border:5px solid var(--ink);border-radius:22px;background:linear-gradient(135deg,#a7df76,var(--grass));box-shadow:0 7px 0 rgba(23,32,51,.18);touch-action:none}', '#arena{position:relative;width:min(1120px,97vw);height:min(630px,64vh);min-height:350px;margin:auto;overflow:hidden;border:5px solid var(--ink);border-radius:22px;background:#25364a;box-shadow:0 7px 0 rgba(23,32,51,.18);touch-action:none}#world{position:absolute;left:0;top:0;width:2400px;height:1500px;background:linear-gradient(135deg,#a7df76,var(--grass));transform-origin:0 0;will-change:transform}')
+          rep('width:10%;border:4px dashed #fff', 'width:7%;border:4px dashed #fff')
+          rep('.base{width:11%}', '.base{width:8%}')
+
+          start = s.index('<div id="arena">')
+          personal = s.index('<div id="personal">', start)
+          large_map = '''<div id="arena"><div id="world"><div class="path p1"></div><div class="path p2"></div><div class="path" style="left:12%;top:20%;width:76%;height:9%"></div><div class="path" style="left:12%;bottom:20%;width:76%;height:9%"></div><div class="base blue">BLUE BASE</div><div class="base red">RED BASE</div><div class="wall" style="left:11%;top:10%;width:12%;height:7%"></div><div class="wall" style="left:27%;top:27%;width:10%;height:9%"></div><div class="wall" style="left:15%;bottom:18%;width:8%;height:14%"></div><div class="wall" style="left:39%;top:9%;width:12%;height:7%"></div><div class="wall" style="left:42%;bottom:25%;width:9%;height:11%"></div><div class="wall" style="right:27%;bottom:27%;width:10%;height:9%"></div><div class="wall" style="right:15%;top:18%;width:8%;height:14%"></div><div class="wall" style="right:11%;bottom:10%;width:12%;height:7%"></div><div class="wall" style="right:39%;bottom:9%;width:12%;height:7%"></div><div class="wall" style="right:42%;top:25%;width:9%;height:11%"></div><div class="wall" style="left:25%;top:52%;width:8%;height:8%"></div><div class="wall" style="right:25%;bottom:52%;width:8%;height:8%"></div><div class="bush" style="left:20%;top:36%"></div><div class="bush" style="left:31%;bottom:24%"></div><div class="bush" style="left:45%;top:31%"></div><div class="bush" style="left:52%;bottom:18%"></div><div class="bush" style="right:31%;top:24%"></div><div class="bush" style="right:20%;bottom:36%"></div><div class="bush" style="right:45%;bottom:31%"></div><div class="bush" style="right:52%;top:18%"></div><div id="star" class="star">⭐</div></div>'''
+          s = s[:start] + large_map + s[personal:]
+          rep('<div id="toast"></div><div id="star" class="star">⭐</div>', '<div id="toast"></div>')
+
+          rep('arena=$("arena"),star=$("star"),waiting=', 'arena=$("arena"),world=$("world"),star=$("star"),waiting=')
+          rep('x:assigned==="blue"?150:900,y:250', 'x:assigned==="blue"?320:2080,y:750')
+          rep('x=team==="blue"?arena.clientWidth*.16:arena.clientWidth*.84;y=arena.clientHeight*(.3+Math.random()*.4);', 'x=team==="blue"?world.clientWidth*.14:world.clientWidth*.86;y=world.clientHeight*(.25+Math.random()*.5);')
+          rep('arena.appendChild(el);return el}', 'world.appendChild(el);return el}')
+
+          old_draw = 'function drawSelf(){if(teamAssigned)paint(playerEl(playerId,true),name,team,x,y,carried,immuneUntil)}function drawRemote(p){paint(playerEl(p.id),p.name,p.team,p.x,p.y,p.carried,p.immuneUntil)}'
+          new_draw = 'function updateCamera(){if(!world)return;const vw=arena.clientWidth,vh=arena.clientHeight,ww=world.clientWidth,wh=world.clientHeight,cx=Math.max(0,Math.min(ww-vw,x-vw/2)),cy=Math.max(0,Math.min(wh-vh,y-vh/2));world.style.transform="translate3d("+(-Math.round(cx))+"px,"+(-Math.round(cy))+"px,0)"}function drawSelf(){if(teamAssigned){paint(playerEl(playerId,true),name,team,x,y,carried,immuneUntil);updateCamera()}}function drawRemote(p){paint(playerEl(p.id),p.name,p.team,p.x,p.y,p.carried,p.immuneUntil)}'
+          rep(old_draw, new_draw)
+
+          rep('const m=85,w=Math.max(20,arena.clientWidth-m*2),h=Math.max(20,arena.clientHeight-m*2);', 'const m=100,w=Math.max(20,world.clientWidth-m*2),h=Math.max(20,world.clientHeight-m*2);')
+          rep('starSpotSafe(arena.clientWidth*fx,arena.clientHeight*fy)', 'starSpotSafe(world.clientWidth*fx,world.clientHeight*fy)')
+          rep('sx=arena.clientWidth*safe[0];sy=arena.clientHeight*safe[1]', 'sx=world.clientWidth*safe[0];sy=world.clientHeight*safe[1]')
+          rep('const w=arena.clientWidth,inBase=', 'const w=world.clientWidth,inBase=')
+          rep('function wallRects(){const ar=arena.getBoundingClientRect();', 'function wallRects(){const ar=world.getBoundingClientRect();')
+          rep('const nx=Math.max(28,Math.min(arena.clientWidth-28,x+dx*SPEED*dt)),ny=Math.max(34,Math.min(arena.clientHeight-30,y+dy*SPEED*dt));', 'const nx=Math.max(28,Math.min(world.clientWidth-28,x+dx*SPEED*dt)),ny=Math.max(34,Math.min(world.clientHeight-30,y+dy*SPEED*dt));')
+          rep('window.addEventListener("blur",stop)', 'window.addEventListener("blur",stop);window.addEventListener("resize",()=>{if(teamAssigned)updateCamera()})')
+
+          p.write_text(s, encoding='utf-8')
+
+      - name: Commit map update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Expand Star Grab to large camera-following 30-player map"
+          git push
