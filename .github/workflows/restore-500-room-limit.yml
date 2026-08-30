@@ -1,0 +1,69 @@
+name: Restore 500 teacher room limit
+
+on:
+  push:
+    paths:
+      - '.github/workflows/restore-500-room-limit.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore 500 teacher rooms plus creator room
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('worker/src/index.ts')
+          s = p.read_text(encoding='utf-8')
+
+          old = '''// Rooms are created on demand. There is deliberately no artificial
+// PUBLIC_ROOM_LIMIT. Cloudflare platform limits are the only capacity limit.
+const ROOM_RELEASE_DELAY_MS = 2 * 60 * 1000;'''
+          new = '''// Up to 500 teacher/public rooms may exist at once.
+// The password-protected creator room is separate and does not count toward this limit.
+const PUBLIC_ROOM_LIMIT = 500;
+const ROOM_RELEASE_DELAY_MS = 2 * 60 * 1000;'''
+          if old not in s:
+              raise SystemExit('Expected unlimited-room header not found')
+          s = s.replace(old, new, 1)
+
+          old = '''    // PUBLIC TEACHER: CREATE ROOM
+    // No fixed room-count check is performed here.
+    if (path === "/capacity/reserve-public") {
+      const publicRooms = await this.getPublicRooms();
+      const creatorRoom = await this.getCreatorRoom();'''
+          new = '''    // PUBLIC TEACHER: CREATE ROOM
+    // Teacher/public rooms are capped at 500. Creator room is separate.
+    if (path === "/capacity/reserve-public") {
+      const publicRooms = await this.getPublicRooms();
+
+      if (Object.keys(publicRooms).length >= PUBLIC_ROOM_LIMIT) {
+        return jsonResponse(
+          {
+            ok: false,
+            full: true,
+            message: "All 500 teacher rooms are currently in use. Please try again later.",
+          },
+          429,
+        );
+      }
+
+      const creatorRoom = await this.getCreatorRoom();'''
+          if old not in s:
+              raise SystemExit('Expected public-room creation block not found')
+          s = s.replace(old, new, 1)
+
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Commit corrected Worker source
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add worker/src/index.ts
+          git commit -m "Restore 500 teacher rooms plus creator access" || exit 0
+          git push
