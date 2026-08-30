@@ -1,0 +1,85 @@
+name: Add adaptive Star Grab maps
+
+on:
+  push:
+    paths:
+      - '.github/workflows/adaptive-player-maps.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add player-count maps
+        shell: python
+        run: |
+          from pathlib import Path
+
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+
+          def rep(old,new,count=1):
+              global s
+              if old not in s:
+                  raise SystemExit('Expected text not found: '+old[:150])
+              s=s.replace(old,new,count)
+
+          rep('<select id="mathModeSelect" class="modeSelect"><option value="add20">Addition within 20</option><option value="sub20">Subtraction within 20</option><option value="mul5">Multiplication: ×2 to ×5 tables</option><option value="div5">Division: ÷2 to ÷5 tables</option><option value="mul10">Multiplication: ×2 to ×10 tables</option><option value="div10">Division: ÷2 to ÷10 tables</option><option value="mul12">Multiplication: ×2 to ×12 tables</option><option value="div12">Division: ÷2 to ÷12 tables</option><option value="mixed">Mixed: + − × ÷</option></select><h2>Who\'s in?</h2>', '<select id="mathModeSelect" class="modeSelect"><option value="add20">Addition within 20</option><option value="sub20">Subtraction within 20</option><option value="mul5">Multiplication: ×2 to ×5 tables</option><option value="div5">Division: ÷2 to ÷5 tables</option><option value="mul10">Multiplication: ×2 to ×10 tables</option><option value="div10">Division: ÷2 to ÷10 tables</option><option value="mul12">Multiplication: ×2 to ×12 tables</option><option value="div12">Division: ÷2 to ÷12 tables</option><option value="mixed">Mixed: + − × ÷</option></select><div class="small">Map: <b id="hostMapPreview">Compact · 0 players</b> (automatic)</div><h2>Who\'s in?</h2>')
+          rep('<div class="small">Math: <b id="hostModeLabel">Addition within 20</b></div><div id="hostTimer">', '<div class="small">Math: <b id="hostModeLabel">Addition within 20</b></div><div class="small">Map: <b id="hostMapLabel">Compact</b></div><div id="hostTimer">')
+          rep('<div id="modeLabel" class="small">Addition within 20</div><div>Room <span id="roomCode"></span></div>', '<div id="modeLabel" class="small">Addition within 20</div><div id="mapLabel" class="small">Compact map</div><div>Room <span id="roomCode"></span></div>')
+
+          rep('hostTimer=$("hostTimer"),hostBlueScore=$("hostBlueScore"),hostRedScore=$("hostRedScore"),hostPhase=$("hostPhase"),hostGameRoster=$("hostGameRoster"),playAgain=$("playAgain"),mathModeSelect=$("mathModeSelect"),hostModeLabel=$("hostModeLabel"),', 'hostTimer=$("hostTimer"),hostBlueScore=$("hostBlueScore"),hostRedScore=$("hostRedScore"),hostPhase=$("hostPhase"),hostGameRoster=$("hostGameRoster"),playAgain=$("playAgain"),mathModeSelect=$("mathModeSelect"),hostModeLabel=$("hostModeLabel"),hostMapPreview=$("hostMapPreview"),hostMapLabel=$("hostMapLabel"),')
+          rep('nameRoom=$("nameRoom"),nameMsg=$("nameMsg"),playerName=$("playerName"),enterBtn=$("enter"),roomCode=$("roomCode"),modeLabel=$("modeLabel"),teamBadge=', 'nameRoom=$("nameRoom"),nameMsg=$("nameMsg"),playerName=$("playerName"),enterBtn=$("enter"),roomCode=$("roomCode"),modeLabel=$("modeLabel"),mapLabel=$("mapLabel"),teamBadge=')
+          rep('stealTargetName="",mathMode="add20",roundStart=0', 'stealTargetName="",mathMode="add20",mapKey="compact",roundStart=0')
+
+          anchor='function show(s){screens.forEach(a=>a.classList.remove("active"));s.classList.add("active")}'
+          maps='''const mapProfiles={
+ compact:{name:"Compact",range:"1–8 players",w:1300,h:820,html:'<div class="path p1"></div><div class="path p2"></div><div class="base blue">BLUE BASE</div><div class="base red">RED BASE</div><div class="wall" style="left:22%;top:18%;width:15%;height:9%"></div><div class="wall" style="right:22%;bottom:18%;width:15%;height:9%"></div><div class="wall" style="left:24%;bottom:18%;width:9%;height:16%"></div><div class="wall" style="right:24%;top:18%;width:9%;height:16%"></div><div class="bush" style="left:38%;top:25%"></div><div class="bush" style="right:38%;bottom:25%"></div>'},
+ standard:{name:"Standard",range:"9–16 players",w:1700,h:1050,html:'<div class="path p1"></div><div class="path p2"></div><div class="path" style="left:14%;top:20%;width:72%;height:9%"></div><div class="base blue">BLUE BASE</div><div class="base red">RED BASE</div><div class="wall" style="left:16%;top:13%;width:13%;height:8%"></div><div class="wall" style="left:31%;bottom:19%;width:10%;height:13%"></div><div class="wall" style="left:43%;top:27%;width:10%;height:9%"></div><div class="wall" style="right:16%;bottom:13%;width:13%;height:8%"></div><div class="wall" style="right:31%;top:19%;width:10%;height:13%"></div><div class="wall" style="right:43%;bottom:27%;width:10%;height:9%"></div><div class="bush" style="left:24%;top:39%"></div><div class="bush" style="left:40%;bottom:23%"></div><div class="bush" style="right:24%;bottom:39%"></div><div class="bush" style="right:40%;top:23%"></div>'},
+ large:{name:"Large",range:"17–24 players",w:2100,h:1300,html:'<div class="path p1"></div><div class="path p2"></div><div class="path" style="left:13%;top:20%;width:74%;height:9%"></div><div class="path" style="left:13%;bottom:20%;width:74%;height:9%"></div><div class="base blue">BLUE BASE</div><div class="base red">RED BASE</div><div class="wall" style="left:12%;top:11%;width:12%;height:7%"></div><div class="wall" style="left:28%;top:28%;width:10%;height:9%"></div><div class="wall" style="left:17%;bottom:19%;width:8%;height:14%"></div><div class="wall" style="left:41%;top:10%;width:12%;height:7%"></div><div class="wall" style="right:28%;bottom:28%;width:10%;height:9%"></div><div class="wall" style="right:17%;top:19%;width:8%;height:14%"></div><div class="wall" style="right:12%;bottom:11%;width:12%;height:7%"></div><div class="wall" style="right:41%;bottom:10%;width:12%;height:7%"></div><div class="wall" style="left:46%;top:43%;width:8%;height:8%"></div><div class="bush" style="left:21%;top:37%"></div><div class="bush" style="left:34%;bottom:24%"></div><div class="bush" style="left:47%;top:27%"></div><div class="bush" style="right:21%;bottom:37%"></div><div class="bush" style="right:34%;top:24%"></div><div class="bush" style="right:47%;bottom:27%"></div>'},
+ mega:{name:"Mega",range:"25+ players",w:2500,h:1550,html:'<div class="path p1"></div><div class="path p2"></div><div class="path" style="left:12%;top:20%;width:76%;height:9%"></div><div class="path" style="left:12%;bottom:20%;width:76%;height:9%"></div><div class="base blue">BLUE BASE</div><div class="base red">RED BASE</div><div class="wall" style="left:11%;top:10%;width:12%;height:7%"></div><div class="wall" style="left:27%;top:27%;width:10%;height:9%"></div><div class="wall" style="left:15%;bottom:18%;width:8%;height:14%"></div><div class="wall" style="left:39%;top:9%;width:12%;height:7%"></div><div class="wall" style="left:42%;bottom:25%;width:9%;height:11%"></div><div class="wall" style="right:27%;bottom:27%;width:10%;height:9%"></div><div class="wall" style="right:15%;top:18%;width:8%;height:14%"></div><div class="wall" style="right:11%;bottom:10%;width:12%;height:7%"></div><div class="wall" style="right:39%;bottom:9%;width:12%;height:7%"></div><div class="wall" style="right:42%;top:25%;width:9%;height:11%"></div><div class="wall" style="left:25%;top:52%;width:8%;height:8%"></div><div class="wall" style="right:25%;bottom:52%;width:8%;height:8%"></div><div class="bush" style="left:20%;top:36%"></div><div class="bush" style="left:31%;bottom:24%"></div><div class="bush" style="left:45%;top:31%"></div><div class="bush" style="left:52%;bottom:18%"></div><div class="bush" style="right:31%;top:24%"></div><div class="bush" style="right:20%;bottom:36%"></div><div class="bush" style="right:45%;bottom:31%"></div><div class="bush" style="right:52%;top:18%"></div>'}
+};
+function chooseMapForCount(n){return n<=8?"compact":n<=16?"standard":n<=24?"large":"mega"}
+function mapW(){return mapProfiles[mapKey].w}function mapH(){return mapProfiles[mapKey].h}
+function renderMap(key){const p=mapProfiles[key]||mapProfiles.compact;if(world.dataset.mapKey===key)return;world.dataset.mapKey=key;world.style.width=p.w+"px";world.style.height=p.h+"px";world.querySelectorAll(".path,.base,.wall,.bush").forEach(el=>el.remove());world.insertAdjacentHTML("afterbegin",p.html)}
+function setMap(key){mapKey=mapProfiles[key]?key:"compact";renderMap(mapKey);const p=mapProfiles[mapKey];if(hostMapLabel)hostMapLabel.textContent=p.name;if(mapLabel)mapLabel.textContent=p.name+" map"}
+function spawnPlayer(){const w=mapW(),h=mapH(),sx=team==="blue"?w*.10:w*.90;for(let i=0;i<50;i++){const sy=h*(.22+Math.random()*.56);if(!blocked(sx,sy)){x=sx;y=sy;return}}x=sx;y=h*.5}
+'''
+          rep(anchor,maps+anchor)
+
+          rep('if(d.type==="startRound"){beginRound(d.startAt,d.endAt,d.mathMode);return}', 'if(d.type==="startRound"){beginRound(d.startAt,d.endAt,d.mathMode,d.mapKey);return}')
+          rep('const rec={id:d.id,name:n,team:assigned,x:assigned==="blue"?320:2080,y:750,carried:0,immuneUntil:0,lastSeen:Date.now()};', 'const rec={id:d.id,name:n,team:assigned,x:assigned==="blue"?mapW()*.10:mapW()*.90,y:mapH()*.5,carried:0,immuneUntil:0,lastSeen:Date.now()};')
+          rep('teamAssigned=true;x=team==="blue"?world.clientWidth*.14:world.clientWidth*.86;y=world.clientHeight*(.25+Math.random()*.5);', 'teamAssigned=true;spawnPlayer();')
+
+          old_roster='function renderHostRoster(){if(!isHost)return;const now=Date.now();for(const[id,p]of players){if(now-(p.lastSeen||0)>20000)players.delete(id)}const list=[...players.values()].sort((a,b)=>a.team.localeCompare(b.team)||a.name.localeCompare(b.name));const bc=list.filter(p=>p.team==="blue").length,rc=list.filter(p=>p.team==="red").length;playerCount.textContent=list.length;blueCount.textContent=bc;redCount.textContent=rc;startRoundBtn.disabled=list.length<1;hostMsg.textContent=list.length?"Everyone in? Press Start when ready.":"The button activates when at least one pupil is ready.";const html=list.length?list.map(p=>\'<div class="rosterRow"><div class="dot \'+p.team+\'"></div><b>\'+safe(p.name)+\'</b><span class="pill \'+p.team+\'">\'+p.team.toUpperCase()+\'</span></div>\').join(""):\'<div class="small">Waiting for pupils to join…</div>\';roster.innerHTML=html;hostGameRoster.innerHTML=html}'
+          new_roster='function renderHostRoster(){if(!isHost)return;const now=Date.now();for(const[id,p]of players){if(now-(p.lastSeen||0)>20000)players.delete(id)}const list=[...players.values()].sort((a,b)=>a.team.localeCompare(b.team)||a.name.localeCompare(b.name));const bc=list.filter(p=>p.team==="blue").length,rc=list.filter(p=>p.team==="red").length;playerCount.textContent=list.length;blueCount.textContent=bc;redCount.textContent=rc;if(!roundActive)setMap(chooseMapForCount(list.length));hostMapPreview.textContent=mapProfiles[mapKey].name+" · "+list.length+" player"+(list.length===1?"":"s");startRoundBtn.disabled=list.length<1;hostMsg.textContent=list.length?"Everyone in? Press Start when ready.":"The button activates when at least one pupil is ready.";const html=list.length?list.map(p=>\'<div class="rosterRow"><div class="dot \'+p.team+\'"></div><b>\'+safe(p.name)+\'</b><span class="pill \'+p.team+\'">\'+p.team.toUpperCase()+\'</span></div>\').join(""):\'<div class="small">Waiting for pupils to join…</div>\';roster.innerHTML=html;hostGameRoster.innerHTML=html}'
+          rep(old_roster,new_roster)
+
+          rep('function startByHost(){if(!isHost||startRoundBtn.disabled)return;setMathMode(mathModeSelect.value);const s=Date.now()+START_DELAY,e=s+ROUND;resetRound();roundStart=s;roundEnd=e;send({type:"startRound",startAt:s,endAt:e,mathMode});beginRound(s,e,mathMode)}', 'function startByHost(){if(!isHost||startRoundBtn.disabled)return;setMathMode(mathModeSelect.value);const n=[...players.values()].filter(p=>Date.now()-(p.lastSeen||0)<15000).length;setMap(chooseMapForCount(n));const s=Date.now()+START_DELAY,e=s+ROUND;resetRound();roundStart=s;roundEnd=e;send({type:"startRound",startAt:s,endAt:e,mathMode,mapKey});beginRound(s,e,mathMode,mapKey)}')
+          rep('function beginRound(s,e,mode=mathMode){setMathMode(mode);s=Number(s)||Date.now()+1000;', 'function beginRound(s,e,mode=mathMode,map=mapKey){setMathMode(mode);setMap(map);s=Number(s)||Date.now()+1000;')
+          rep('}else{results.classList.remove("open");waiting.classList.add("open");waitTitle.textContent="Get ready!";', '}else{spawnPlayer();placeStar();drawSelf();sendState();results.classList.remove("open");waiting.classList.add("open");waitTitle.textContent="Get ready!";')
+          rep('send({type:"hostSync",blue,red,roundStart,roundEnd,mathMode,active:', 'send({type:"hostSync",blue,red,roundStart,roundEnd,mathMode,mapKey,active:')
+          rep('function applyHostSync(d){if(isHost)return;if(d.mathMode)setMathMode(d.mathMode);blue=', 'function applyHostSync(d){if(isHost)return;if(d.mathMode)setMathMode(d.mathMode);if(d.mapKey)setMap(d.mapKey);blue=')
+          rep('beginRound(s,e,d.mathMode||mathMode)}', 'beginRound(s,e,d.mathMode||mathMode,d.mapKey||mapKey)}')
+
+          rep('const vw=arena.clientWidth,vh=arena.clientHeight,ww=world.clientWidth,wh=world.clientHeight,', 'const vw=arena.clientWidth,vh=arena.clientHeight,ww=mapW(),wh=mapH(),')
+          rep('const m=100,w=Math.max(20,world.clientWidth-m*2),h=Math.max(20,world.clientHeight-m*2);', 'const m=90,w=Math.max(20,mapW()-m*2),h=Math.max(20,mapH()-m*2);')
+          rep('starSpotSafe(world.clientWidth*fx,world.clientHeight*fy)', 'starSpotSafe(mapW()*fx,mapH()*fy)')
+          rep('sx=world.clientWidth*safe[0];sy=world.clientHeight*safe[1]', 'sx=mapW()*safe[0];sy=mapH()*safe[1]')
+          rep('const w=world.clientWidth,inBase=', 'const w=mapW(),inBase=')
+          rep('const nx=Math.max(28,Math.min(world.clientWidth-28,x+dx*SPEED*dt)),ny=Math.max(34,Math.min(world.clientHeight-30,y+dy*SPEED*dt));', 'const nx=Math.max(28,Math.min(mapW()-28,x+dx*SPEED*dt)),ny=Math.max(34,Math.min(mapH()-30,y+dy*SPEED*dt));')
+
+          rep('window.addEventListener("beforeunload",()=>{if(!isHost&&teamAssigned)send({type:"playerLeft",id:playerId})})', 'setMap("compact");window.addEventListener("beforeunload",()=>{if(!isHost&&teamAssigned)send({type:"playerLeft",id:playerId})})')
+
+          p.write_text(s,encoding='utf-8')
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Add four adaptive maps based on player count"
+          git push
