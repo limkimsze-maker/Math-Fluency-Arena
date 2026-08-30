@@ -38,6 +38,9 @@
     summary { cursor:pointer; font-weight:800; }
     .password { width:100%; padding:12px; border:3px solid #1f2937; border-radius:12px; margin-top:12px; }
     .roomBadge { display:inline-block; padding:8px 14px; border:3px solid #1f2937; border-radius:14px; background:#fff; font-size:28px; font-weight:900; letter-spacing:4px; }
+    .nameLabel { display:block; margin:20px 0 7px; font-weight:900; font-size:18px; }
+    .nameInput { width:100%; padding:13px 14px; border:3px solid #1f2937; border-radius:14px; text-align:center; font-size:22px; font-weight:800; }
+    #teamMessage { min-height:28px; margin:8px 0 0; font-weight:800; color:#b4232c; }
     .teamGrid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:18px; }
     .teamBtn { min-height:110px; border:4px solid #1f2937; border-radius:20px; color:white; font-weight:900; font-size:24px; cursor:pointer; }
     .teamBtn.blue { background:linear-gradient(180deg,var(--blue),var(--blue2)); }
@@ -62,12 +65,14 @@
     .path.p2 { left:43%; top:8%; width:14%; height:84%; }
     .wall { position:absolute; background:linear-gradient(#e7c592,var(--wall)); border:4px solid var(--wall2); border-radius:12px; box-shadow:inset 0 -8px 0 rgba(117,79,35,.18); }
     .bush { position:absolute; width:68px; height:52px; border-radius:50%; background:#4aa73e; border:4px solid #2e7d32; box-shadow:-22px 7px 0 #55b84a,22px 7px 0 #55b84a; opacity:.94; }
-    .player { position:absolute; width:48px; height:48px; transform:translate(-50%,-50%); border:4px solid #172033; border-radius:50%; box-shadow:0 5px 0 rgba(23,32,51,.25); transition:left .18s linear, top .18s linear; z-index:10; }
+    .playerWrap { position:absolute; width:48px; height:48px; transform:translate(-50%,-50%); transition:left .18s linear, top .18s linear; z-index:10; pointer-events:none; }
+    .player { position:absolute; inset:0; border:4px solid #172033; border-radius:50%; box-shadow:0 5px 0 rgba(23,32,51,.25); }
     .player::before { content:""; position:absolute; width:8px; height:8px; border-radius:50%; background:#fff; left:10px; top:12px; box-shadow:16px 0 0 #fff; }
     .player::after { content:""; position:absolute; width:16px; height:6px; border-bottom:3px solid #172033; border-radius:50%; left:12px; bottom:9px; }
     .player.blue { background:var(--blue); }
     .player.red { background:var(--red); }
     .player.me { outline:4px solid #fff; outline-offset:2px; }
+    .playerName { position:absolute; left:50%; bottom:55px; transform:translateX(-50%); max-width:120px; padding:3px 7px; border:2px solid #172033; border-radius:9px; background:rgba(255,255,255,.94); color:#172033; font-size:12px; font-weight:900; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; box-shadow:0 2px 0 rgba(23,32,51,.2); }
     .star { position:absolute; width:54px; height:54px; transform:translate(-50%,-50%); display:grid; place-items:center; font-size:44px; filter:drop-shadow(0 4px 0 rgba(100,70,0,.28)); animation:bob 1.1s ease-in-out infinite alternate; z-index:7; }
     @keyframes bob { to { transform:translate(-50%,-58%) scale(1.06); } }
     #streak { position:absolute; left:12px; top:12px; z-index:20; background:#fff; border:3px solid #1f2937; border-radius:14px; padding:7px 10px; font-weight:900; }
@@ -100,6 +105,7 @@
       #arena { min-height:330px; }
       .wall { transform:scale(.85); }
       .bush { transform:scale(.8); }
+      .playerName { font-size:11px; max-width:90px; }
     }
   </style>
 </head>
@@ -128,6 +134,10 @@
     <h1>Choose Your Team</h1>
     <p>Room</p>
     <div class="roomBadge" id="teamRoomCode"></div>
+    <label class="nameLabel" for="playerNameInput">Name your character</label>
+    <input id="playerNameInput" class="nameInput" type="text" maxlength="12" autocomplete="off" placeholder="e.g. Ryan" aria-describedby="nameHelp">
+    <p id="nameHelp" class="mini">Up to 12 letters, numbers, spaces or hyphens. Your name appears above your character.</p>
+    <div id="teamMessage" aria-live="polite"></div>
     <p class="mini">Your teacher can split the class into Blue and Red teams.</p>
     <div class="teamGrid">
       <button class="teamBtn blue" data-team="blue">🔵 BLUE</button>
@@ -139,7 +149,7 @@
 <section id="gameScreen" class="screen">
   <div id="hud">
     <div class="scoreBox blue">BLUE <span id="blueScore">0</span></div>
-    <div class="centreHud"><div>⭐ STAR RUSH</div><div>Room <span id="roomCodeText"></span></div><div id="connection">Connecting...</div></div>
+    <div class="centreHud"><div>⭐ STAR RUSH</div><div><span id="myNameHud"></span> · Room <span id="roomCodeText"></span></div><div id="connection">Connecting...</div></div>
     <div class="scoreBox red"><span id="redScore">0</span> RED</div>
   </div>
 
@@ -181,20 +191,21 @@
   const BACKEND = "https://live.limkimsze-maker.workers.dev";
   const WS_BACKEND = "wss://live.limkimsze-maker.workers.dev";
   const WIN_SCORE = 100;
-  const SEND_INTERVAL = 200; // max 5 movement messages/sec while moving
-  const PLAYER_SPEED = 190; // px/sec
+  const SEND_INTERVAL = 200;
+  const PLAYER_SPEED = 190;
 
   const $ = id => document.getElementById(id);
   const lobbyScreen = $("lobbyScreen"), teamScreen = $("teamScreen"), gameScreen = $("gameScreen");
   const createBtn = $("createBtn"), joinBtn = $("joinBtn"), creatorBtn = $("creatorBtn");
   const roomInput = $("roomInput"), creatorPassword = $("creatorPassword"), messageEl = $("message");
+  const playerNameInput = $("playerNameInput"), teamMessage = $("teamMessage"), myNameHud = $("myNameHud");
   const arena = $("arena"), star = $("star"), questionOverlay = $("questionOverlay"), questionText = $("questionText"), answers = $("answers"), feedback = $("feedback");
   const blueScoreEl = $("blueScore"), redScoreEl = $("redScore"), streakValue = $("streakValue"), connection = $("connection");
 
   const playerId = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random()).slice(0,8);
   const players = new Map();
   const moveState = { up:false, down:false, left:false, right:false };
-  let currentRoom = "", myTeam = "blue", socket = null;
+  let currentRoom = "", myTeam = "blue", myName = "Player", socket = null;
   let x = 100, y = 100, starX = 300, starY = 220;
   let blueScore = 0, redScore = 0, streak = 0, questionOpen = false, scoringLocked = false;
   let lastFrame = performance.now(), lastSend = 0, movedSinceSend = false;
@@ -205,6 +216,13 @@
   }
   function showMessage(text) { messageEl.textContent = text; }
   function setBusy(button,busy) { button.disabled = busy; }
+  function cleanName(value) {
+    return String(value || "")
+      .replace(/[^A-Za-z0-9 -]/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0,12);
+  }
 
   async function createPublicRoom() {
     showMessage("Creating room..."); setBusy(createBtn,true);
@@ -243,17 +261,35 @@
   }
 
   function goChooseTeam(code) {
-    currentRoom = String(code); $("teamRoomCode").textContent = currentRoom; showScreen(teamScreen);
+    currentRoom = String(code);
+    $("teamRoomCode").textContent = currentRoom;
+    teamMessage.textContent = "";
+    playerNameInput.value = "";
+    showScreen(teamScreen);
+    setTimeout(() => playerNameInput.focus(), 50);
   }
 
+  playerNameInput.addEventListener("input", () => {
+    const cleaned = cleanName(playerNameInput.value);
+    if (playerNameInput.value !== cleaned) playerNameInput.value = cleaned;
+  });
+
   document.querySelectorAll(".teamBtn").forEach(btn => btn.addEventListener("click", () => {
+    myName = cleanName(playerNameInput.value);
+    if (!myName) {
+      teamMessage.textContent = "Please enter your character name first.";
+      playerNameInput.focus();
+      return;
+    }
+    teamMessage.textContent = "";
     myTeam = btn.dataset.team;
     $("roomCodeText").textContent = currentRoom;
+    myNameHud.textContent = myName;
     showScreen(gameScreen);
     requestAnimationFrame(() => {
       x = myTeam === "blue" ? arena.clientWidth * .18 : arena.clientWidth * .82;
       y = arena.clientHeight * (.3 + Math.random()*.4);
-      drawPlayer(playerId,x,y,myTeam,true);
+      drawPlayer(playerId,x,y,myTeam,true,myName);
       placeStar();
       connect();
     });
@@ -271,13 +307,16 @@
     socket.addEventListener("message", event => {
       try {
         const d = JSON.parse(event.data);
-        if (d.type === "move" && d.id !== playerId) drawPlayer(d.id,d.x,d.y,d.team,false);
+        if (d.type === "move" && d.id !== playerId) drawPlayer(d.id,d.x,d.y,d.team,false,cleanName(d.name) || "Player");
         if (d.type === "score") {
           if (d.team === "blue") blueScore += Number(d.points)||0;
           if (d.team === "red") redScore += Number(d.points)||0;
           updateScore();
         }
-        if (d.type === "needSync") send({type:"scoreSync",blue:blueScore,red:redScore});
+        if (d.type === "needSync") {
+          send({type:"scoreSync",blue:blueScore,red:redScore});
+          sendPosition(true);
+        }
         if (d.type === "scoreSync") {
           blueScore = Math.max(blueScore, Number(d.blue)||0);
           redScore = Math.max(redScore, Number(d.red)||0);
@@ -291,23 +330,39 @@
     if (socket && socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify(data));
   }
 
-  function drawPlayer(id,px,py,team,isMe) {
-    let p = players.get(id);
-    if (!p) {
-      p = document.createElement("div");
+  function drawPlayer(id,px,py,team,isMe,name) {
+    let wrap = players.get(id);
+    if (!wrap) {
+      wrap = document.createElement("div");
+      wrap.className = "playerWrap";
+      wrap.dataset.id = id;
+
+      const p = document.createElement("div");
       p.className = "player " + (team === "red" ? "red" : "blue") + (isMe ? " me" : "");
-      p.dataset.id = id;
-      arena.appendChild(p); players.set(id,p);
+
+      const label = document.createElement("div");
+      label.className = "playerName";
+
+      wrap.appendChild(p);
+      wrap.appendChild(label);
+      arena.appendChild(wrap);
+      players.set(id,wrap);
     }
-    p.classList.toggle("blue",team !== "red"); p.classList.toggle("red",team === "red");
-    p.style.left = px + "px"; p.style.top = py + "px";
+    const p = wrap.querySelector(".player");
+    const label = wrap.querySelector(".playerName");
+    p.classList.toggle("blue",team !== "red");
+    p.classList.toggle("red",team === "red");
+    p.classList.toggle("me",!!isMe);
+    label.textContent = cleanName(name) || "Player";
+    wrap.style.left = px + "px";
+    wrap.style.top = py + "px";
   }
 
   function sendPosition(force=false) {
     const now = performance.now();
     if (!force && now-lastSend < SEND_INTERVAL) return;
     lastSend = now; movedSinceSend = false;
-    send({type:"move",id:playerId,x:Math.round(x),y:Math.round(y),team:myTeam});
+    send({type:"move",id:playerId,x:Math.round(x),y:Math.round(y),team:myTeam,name:myName});
   }
 
   function gameLoop(now) {
@@ -320,7 +375,7 @@
         x += dx*PLAYER_SPEED*dt; y += dy*PLAYER_SPEED*dt;
         x = Math.max(26,Math.min(arena.clientWidth-26,x));
         y = Math.max(26,Math.min(arena.clientHeight-26,y));
-        drawPlayer(playerId,x,y,myTeam,true); movedSinceSend = true; sendPosition(false);
+        drawPlayer(playerId,x,y,myTeam,true,myName); movedSinceSend = true; sendPosition(false);
         checkStarCollision();
       }
     }
@@ -416,6 +471,7 @@
   roomInput.addEventListener("input",()=> roomInput.value = roomInput.value.replace(/\D/g,""));
   roomInput.addEventListener("keydown",e=>{if(e.key==="Enter")joinRoom();});
   creatorPassword.addEventListener("keydown",e=>{if(e.key==="Enter")createCreatorRoom();});
+  playerNameInput.addEventListener("keydown",e=>{if(e.key==="Enter")document.querySelector(".teamBtn.blue").focus();});
 })();
 </script>
 </body>
