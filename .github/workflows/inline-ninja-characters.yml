@@ -1,0 +1,88 @@
+name: Add lightweight ninja characters
+
+on:
+  push:
+    paths:
+      - '.github/workflows/inline-ninja-characters.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add inline SVG ninjas and direction
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+
+          old_css='.player{position:absolute;width:58px;height:72px;transform:translate(-50%,-50%);z-index:12;transition:left .18s linear,top .18s linear;pointer-events:none}.avatar{position:absolute;left:5px;top:16px;width:48px;height:48px;border:4px solid var(--ink);border-radius:50%;box-shadow:0 4px 0 rgba(23,32,51,.22)}.player.blue .avatar{background:var(--blue)}.player.red .avatar{background:var(--red)}.player.me .avatar{outline:4px solid #fff;outline-offset:2px}.avatar:before{content:"";position:absolute;width:8px;height:8px;background:#fff;border-radius:50%;left:9px;top:11px;box-shadow:16px 0 0 #fff}.name{position:absolute;left:50%;top:40px;transform:translate(-50%,-50%);z-index:3;max-width:92px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:rgba(255,255,255,.92);border:2px solid var(--ink);border-radius:8px;padding:1px 5px;font-size:11px;font-weight:900}.carry{position:absolute;right:-10px;bottom:0;background:#fff;border:2px solid var(--ink);border-radius:9px;padding:1px 5px;font-size:13px;font-weight:900}.player.immune .avatar{animation:flash .25s linear infinite alternate}@keyframes flash{to{opacity:.35}}'
+          new_css='.player{position:absolute;width:66px;height:72px;transform:translate(-50%,-50%);z-index:12;transition:left .18s linear,top .18s linear;pointer-events:none}.ninja{position:absolute;left:3px;top:5px;width:60px;height:60px;transform-origin:50% 50%;color:var(--blue)}.player.red .ninja{color:var(--red)}.player.left .ninja{transform:scaleX(-1)}.player.me .ninja{filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 2px #fff)}.name{position:absolute;left:50%;top:35px;transform:translate(-50%,-50%);z-index:4;max-width:78px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:rgba(255,255,255,.92);border:2px solid var(--ink);border-radius:8px;padding:1px 4px;font-size:10px;font-weight:900}.carry{position:absolute;right:-9px;bottom:0;background:#fff;border:2px solid var(--ink);border-radius:9px;padding:1px 5px;font-size:13px;font-weight:900}.player.immune .ninja{animation:flash .25s linear infinite alternate}@keyframes flash{to{opacity:.35}}'
+          if old_css not in s:
+              raise SystemExit('avatar CSS block not found')
+          s=s.replace(old_css,new_css,1)
+
+          s=s.replace('hostTicker=null;','hostTicker=null,facing="right";',1)
+
+          old_payload='function payload(type="playerState"){return{type,id:playerId,name,team,x:Math.round(x),y:Math.round(y),carried,immuneUntil,lastSeen:Date.now()}}'
+          new_payload='function payload(type="playerState"){return{type,id:playerId,name,team,x:Math.round(x),y:Math.round(y),carried,immuneUntil,facing,lastSeen:Date.now()}}'
+          if old_payload not in s: raise SystemExit('payload not found')
+          s=s.replace(old_payload,new_payload,1)
+
+          old_upsert='const p={...(players.get(d.id)||{}),id:d.id,name:safe(d.name)||"Player",team:d.team,x:Number(d.x)||100,y:Number(d.y)||100,carried:Number(d.carried)||0,immuneUntil:Number(d.immuneUntil)||0,lastSeen:Date.now()};'
+          new_upsert='const p={...(players.get(d.id)||{}),id:d.id,name:safe(d.name)||"Player",team:d.team,x:Number(d.x)||100,y:Number(d.y)||100,carried:Number(d.carried)||0,immuneUntil:Number(d.immuneUntil)||0,facing:d.facing==="left"?"left":"right",lastSeen:Date.now()};'
+          if old_upsert not in s: raise SystemExit('upsert not found')
+          s=s.replace(old_upsert,new_upsert,1)
+
+          old_player=r'''function playerEl(id,me=false){let el=document.querySelector('[data-player="'+id+'"]');if(el)return el;el=document.createElement("div");el.className="player"+(me?" me":"");el.dataset.player=id;el.innerHTML='<div class="name"></div><div class="avatar"></div><div class="carry">⭐0</div>';world.appendChild(el);return el}
+function paint(el,n,t,px,py,c,imm){el.classList.toggle("blue",t!=="red");el.classList.toggle("red",t==="red");el.classList.toggle("immune",imm>Date.now());el.style.left=px+"px";el.style.top=py+"px";el.querySelector(".name").textContent=n;el.querySelector(".carry").textContent="⭐"+c}
+function updateCamera(){if(!world)return;const vw=arena.clientWidth,vh=arena.clientHeight,ww=mapW(),wh=mapH(),cx=Math.max(0,Math.min(ww-vw,x-vw/2)),cy=Math.max(0,Math.min(wh-vh,y-vh/2));world.style.transform="translate3d("+(-Math.round(cx))+"px,"+(-Math.round(cy))+"px,0)"}function drawSelf(){if(teamAssigned){paint(playerEl(playerId,true),name,team,x,y,carried,immuneUntil);updateCamera()}}function drawRemote(p){paint(playerEl(p.id),p.name,p.team,p.x,p.y,p.carried,p.immuneUntil)}'''
+
+          new_player=r'''const ninjaSVG='<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g stroke="#172033" stroke-width="2.5" stroke-linejoin="round"><path d="M18 19 5 13l7 10-9 5 16 2" fill="currentColor"/><circle cx="34" cy="21" r="15" fill="currentColor"/><path d="M23 16q11-6 21 0v9q-11 5-21 0z" fill="#ffd7a8"/><ellipse cx="40" cy="20" rx="2.2" ry="3.4" fill="#172033" stroke="none"/><path d="M22 34q12-8 23 0l3 15q-14 9-29 0z" fill="currentColor"/><path d="m31 36 3 3 4-3-1 5 4 3-5 .4-2 5-2-5-5-.4 4-3z" fill="#ffd84a" stroke-width="1.5"/><path d="m22 38-9 5 4 5 8-5m21-5 8 5-4 5-7-5M27 49l-7 9 8 2 6-8m7-3 7 8-7 3-6-8" fill="currentColor"/></g></svg>';
+function playerEl(id,me=false){let el=document.querySelector('[data-player="'+id+'"]');if(el)return el;el=document.createElement("div");el.className="player"+(me?" me":"");el.dataset.player=id;el.innerHTML='<div class="ninja">'+ninjaSVG+'</div><div class="name"></div><div class="carry">⭐0</div>';world.appendChild(el);return el}
+function paint(el,n,t,px,py,c,imm,face="right"){el.classList.toggle("blue",t!=="red");el.classList.toggle("red",t==="red");el.classList.toggle("left",face==="left");el.classList.toggle("immune",imm>Date.now());el.style.left=px+"px";el.style.top=py+"px";el.querySelector(".name").textContent=n;el.querySelector(".carry").textContent="⭐"+c}
+function updateCamera(){if(!world)return;const vw=arena.clientWidth,vh=arena.clientHeight,ww=mapW(),wh=mapH(),cx=Math.max(0,Math.min(ww-vw,x-vw/2)),cy=Math.max(0,Math.min(wh-vh,y-vh/2));world.style.transform="translate3d("+(-Math.round(cx))+"px,"+(-Math.round(cy))+"px,0)"}function drawSelf(){if(teamAssigned){paint(playerEl(playerId,true),name,team,x,y,carried,immuneUntil,facing);updateCamera()}}function drawRemote(p){paint(playerEl(p.id),p.name,p.team,p.x,p.y,p.carried,p.immuneUntil,p.facing)}'''
+          if old_player not in s: raise SystemExit('player block not found')
+          s=s.replace(old_player,new_player,1)
+
+          old_loop='if(dx||dy){const len=Math.hypot(dx,dy)||1;dx/=len;dy/=len;const nx='
+          new_loop='if(dx||dy){if(dx<0)facing="left";else if(dx>0)facing="right";const len=Math.hypot(dx,dy)||1;dx/=len;dy/=len;const nx='
+          if old_loop not in s: raise SystemExit('movement loop not found')
+          s=s.replace(old_loop,new_loop,1)
+
+          old_bind='function bind(id,dir){const el=$(id),on=e=>{e.preventDefault();if(roundActive&&Date.now()>=roundStart&&!qOpen)move[dir]=true},off=e=>{e.preventDefault();move[dir]=false;if(moved)sendPos(true)};'
+          new_bind='function bind(id,dir){const el=$(id),on=e=>{e.preventDefault();if(roundActive&&Date.now()>=roundStart&&!qOpen){if(dir==="left"||dir==="right"){facing=dir;drawSelf()}move[dir]=true}},off=e=>{e.preventDefault();move[dir]=false;if(moved)sendPos(true)};'
+          if old_bind not in s: raise SystemExit('bind function not found')
+          s=s.replace(old_bind,new_bind,1)
+
+          old_key='document.addEventListener("keydown",e=>{const d=keys[e.key];if(!d||!roundActive||Date.now()<roundStart||qOpen)return;e.preventDefault();move[d]=true})'
+          new_key='document.addEventListener("keydown",e=>{const d=keys[e.key];if(!d||!roundActive||Date.now()<roundStart||qOpen)return;e.preventDefault();if(d==="left"||d==="right"){facing=d;drawSelf()}move[d]=true})'
+          if old_key not in s: raise SystemExit('keydown not found')
+          s=s.replace(old_key,new_key,1)
+
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Validate JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text(encoding='utf-8')
+          m=re.search(r'<script>([\s\S]*?)</script>',s)
+          if not m: raise SystemExit('script not found')
+          Path('/tmp/game.js').write_text(m.group(1),encoding='utf-8')
+          PY
+          node --check /tmp/game.js
+      - name: Commit update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Add lightweight directional ninja characters"
+          git push
