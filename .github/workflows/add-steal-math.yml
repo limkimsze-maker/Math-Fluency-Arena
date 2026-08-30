@@ -1,0 +1,74 @@
+name: Add steal math challenge
+
+on:
+  push:
+    paths:
+      - '.github/workflows/add-steal-math.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch game
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          replacements = [
+            (
+              '.name{position:absolute;left:50%;top:0;transform:translateX(-50%);max-width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#fff;border:2px solid var(--ink);border-radius:8px;padding:1px 5px;font-size:12px;font-weight:900}',
+              '.name{position:absolute;left:50%;top:40px;transform:translate(-50%,-50%);z-index:3;max-width:92px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:rgba(255,255,255,.92);border:2px solid var(--ink);border-radius:8px;padding:1px 5px;font-size:11px;font-weight:900}'
+            ),
+            (
+              '<div id="question" class="overlay"><div class="box"><div class="small">Solve to pick up this star</div><div id="qText">7 × 8</div>',
+              '<div id="question" class="overlay"><div class="box"><div id="qPrompt" class="small">Solve to pick up this star</div><div id="qText">7 × 8</div>'
+            ),
+            (
+              'blueScore=$("blueScore"),redScore=$("redScore"),carryValue=$("carryValue"),streakValue=$("streakValue"),qText=$("qText"),answers=$("answers"),feedback=$("feedback"),winner=$("winner"),finalScore=$("finalScore"),',
+              'blueScore=$("blueScore"),redScore=$("redScore"),carryValue=$("carryValue"),streakValue=$("streakValue"),qPrompt=$("qPrompt"),qText=$("qText"),answers=$("answers"),feedback=$("feedback"),winner=$("winner"),finalScore=$("finalScore"),'
+            ),
+            (
+              'qOpen=false,qLock=false,roundStart=0,roundEnd=0,roundActive=false,finished=false,',
+              'qOpen=false,qLock=false,questionMode="star",stealTargetId=null,stealTargetName="",roundStart=0,roundEnd=0,roundActive=false,finished=false,'
+            ),
+            (
+              'function openQuestion(){qOpen=true;stop();feedback.textContent="";const q=makeQ();qText.textContent=q.text;answers.innerHTML="";q.options.forEach(v=>{const b=document.createElement("button");b.className="ans";b.textContent=v;b.addEventListener("click",()=>answer(b,v,q.correct));answers.appendChild(b)});question.classList.add("open")}',
+              'function openQuestion(mode="star",targetId=null,targetName=""){qOpen=true;stop();questionMode=mode;stealTargetId=targetId;stealTargetName=safe(targetName);feedback.textContent="";qPrompt.textContent=mode==="steal"?"Solve correctly to steal 1 ⭐ from "+(stealTargetName||"this opponent"):"Solve to pick up this star";const q=makeQ();qText.textContent=q.text;answers.innerHTML="";q.options.forEach(v=>{const b=document.createElement("button");b.className="ans";b.textContent=v;b.addEventListener("click",()=>answer(b,v,q.correct));answers.appendChild(b)});question.classList.add("open")}'
+            ),
+            (
+              'function answer(btn,v,c){if(qLock)return;qLock=true;stats.attempts++;[...answers.children].forEach(b=>b.disabled=true);if(v===c){btn.classList.add("good");stats.correct++;stats.collected++;streak++;bestStreak=Math.max(bestStreak,streak);carried=Math.min(LIMIT,carried+1);feedback.textContent="Correct! ⭐ Star picked up.";carryUI();sendState()}else{btn.classList.add("bad");streak=0;[...answers.children].forEach(b=>{if(Number(b.textContent)===c)b.classList.add("good")});feedback.textContent="Answer: "+c+". Try the next star!";streakValue.textContent=0}setTimeout(()=>{question.classList.remove("open");qOpen=false;qLock=false;placeStar()},v===c?650:1000)}',
+              'function answer(btn,v,c){if(qLock)return;qLock=true;const mode=questionMode,targetId=stealTargetId;stats.attempts++;[...answers.children].forEach(b=>b.disabled=true);if(v===c){btn.classList.add("good");stats.correct++;streak++;bestStreak=Math.max(bestStreak,streak);if(mode==="steal"){feedback.textContent="Correct! ⚡ Steal unlocked!";if(targetId)send({type:"tagAttempt",taggerId:playerId,targetId,taggerName:name,challengePassed:true,ts:Date.now()})}else{stats.collected++;carried=Math.min(LIMIT,carried+1);feedback.textContent="Correct! ⭐ Star picked up.";carryUI();sendState()}}else{btn.classList.add("bad");streak=0;[...answers.children].forEach(b=>{if(Number(b.textContent)===c)b.classList.add("good")});feedback.textContent=mode==="steal"?"No steal. Answer: "+c:"Answer: "+c+". Try the next star!";streakValue.textContent=0}setTimeout(()=>{question.classList.remove("open");qOpen=false;qLock=false;if(mode==="star")placeStar();questionMode="star";stealTargetId=null;stealTargetName=""},v===c?700:1000)}'
+            ),
+            (
+              'function checkTag(){if(!roundActive||Date.now()<roundStart||qOpen||carried>=LIMIT)return;const now=Date.now();for(const[id,p]of players){if(p.team===team||now-(p.lastSeen||0)>5000||Math.hypot(x-p.x,y-p.y)>TAG)continue;const last=tagCooldown.get(id)||0;if(now-last<700)continue;tagCooldown.set(id,now);send({type:"tagAttempt",taggerId:playerId,targetId:id,taggerName:name,ts:now})}}',
+              'function checkTag(){if(!roundActive||Date.now()<roundStart||qOpen||carried>=LIMIT)return;const now=Date.now();for(const[id,p]of players){if(p.team===team||p.carried<=0||now-(p.lastSeen||0)>5000||Math.hypot(x-p.x,y-p.y)>TAG)continue;const last=tagCooldown.get(id)||0;if(now-last<1800)continue;tagCooldown.set(id,now);openQuestion("steal",id,p.name);break}}'
+            ),
+            (
+              'function incomingTag(d){const now=Date.now(),p=players.get(d.taggerId);if(!roundActive||now<roundStart||carried<=0||now<immuneUntil||!p||p.team===team||p.carried>=LIMIT||Math.hypot(x-p.x,y-p.y)>TAG+14)return;carried--;immuneUntil=now+IMMUNE;flash("💫 "+safe(d.taggerName||"Opponent")+" stole 1 star!");carryUI();placeStar();sendState();send({type:"tagSuccess",taggerId:d.taggerId,targetId:playerId,targetName:name})}',
+              'function incomingTag(d){const now=Date.now(),p=players.get(d.taggerId);if(d.challengePassed!==true||!roundActive||now<roundStart||carried<=0||now<immuneUntil||!p||p.team===team||p.carried>=LIMIT)return;carried--;immuneUntil=now+IMMUNE;flash("💫 "+safe(d.taggerName||"Opponent")+" solved correctly and stole 1 star!");carryUI();placeStar();sendState();send({type:"tagSuccess",taggerId:d.taggerId,targetId:playerId,targetName:name})}'
+            ),
+            (
+              '<div class="note">Move to your ⭐, solve, carry up to 3, tag opponents to steal one, and bank at your base.</div>',
+              '<div class="note">Move to your ⭐, solve, carry up to 3, tag an opponent and solve correctly to steal one, then bank at your base.</div>'
+            )
+          ]
+
+          for old, new in replacements:
+              if old not in s:
+                  raise SystemExit('Expected text not found: ' + old[:120])
+              s = s.replace(old, new, 1)
+
+          p.write_text(s, encoding='utf-8')
+      - name: Commit fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Require math answer before stealing and overlay names"
+          git push
