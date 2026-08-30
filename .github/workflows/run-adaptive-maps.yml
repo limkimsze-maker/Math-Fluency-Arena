@@ -1,0 +1,24 @@
+name: Run adaptive maps patch
+
+on:
+  push:
+    paths:
+      - '.github/workflows/run-adaptive-maps.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch index
+        run: python .github/scripts/adaptive_maps.py
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Add adaptive maps for different class sizes"
+          git push
