@@ -1,67 +1,165 @@
 from pathlib import Path
+import re
 
 p = Path('index.html')
 s = p.read_text(encoding='utf-8')
 
-if 'HOST_SAFETY_V1' in s:
-    raise SystemExit('Host safety notice is already installed')
+if 'GAMEPLAY_TUNING_V2' in s:
+    raise SystemExit('Gameplay tuning is already installed')
 
-# 1) Host safety styling.
-css_marker = '/* OBSERVER_GUEST_V1 */\n'
-css_add = '''/* HOST_SAFETY_V1 */
-.hostSafetyWarn{margin:12px 0;padding:12px;border:3px solid #a85b00;border-radius:14px;background:#fff3d9;color:#6f3a00;font-size:14px;font-weight:800;line-height:1.45;text-align:left}.safeCloseNotice{display:none;margin:12px 0;padding:14px;border:3px solid #237a3b;border-radius:14px;background:#e8f8ec;color:#155b2b;font-size:18px;font-weight:900;text-align:center;box-shadow:0 3px 0 rgba(23,32,51,.12)}.observerGuest .hostSafetyWarn,.observerGuest .safeCloseNotice{display:none!important}
-/* OBSERVER_GUEST_V1 */
-'''
-if css_marker not in s:
-    raise SystemExit('CSS marker not found')
-s = s.replace(css_marker, css_add, 1)
+def replace_once(old, new, label):
+    global s
+    if old not in s:
+        raise SystemExit(f'{label} marker not found')
+    s = s.replace(old, new, 1)
 
-# 2) Put the repercussions and safe-to-close message on both host screens.
-old_lobby_msg = '<div id="hostMsg" class="msg">The button activates when at least one pupil is ready.</div>'
-new_lobby_msg = old_lobby_msg + '<div id="hostSafetyLobby" class="hostSafetyWarn">⚠️ <b>Keep this host page open while the live session is in use.</b> Closing or refreshing it disconnects the host, may stop new players from being assigned, removes the host controls and Teacher Observer view, may prevent local player results from being recorded, and can eventually cause the room code to be released.</div><div id="safeCloseLobby" class="safeCloseNotice">✅ All players have finished and left the live room. It is now safe to close this host page.</div>'
-if old_lobby_msg not in s:
-    raise SystemExit('Host lobby message marker not found')
-s = s.replace(old_lobby_msg, new_lobby_msg, 1)
+def regex_once(pattern, replacement, label):
+    global s
+    s2, n = re.subn(pattern, replacement, s, count=1, flags=re.S)
+    if n != 1:
+        raise SystemExit(f'{label} marker not found or ambiguous: {n}')
+    s = s2
 
-old_game_roster = '<div id="hostGameRoster" class="roster"></div><h2 id="hostRankingTitle">Player Ranking</h2>'
-new_game_roster = '<div id="hostGameRoster" class="roster"></div><div id="hostSafetyGame" class="hostSafetyWarn">⚠️ <b>Keep this host page open while players are connected.</b> Closing or refreshing it disconnects the host, may stop new players from joining correctly, removes host/observer controls, and may prevent local results from being recorded.</div><div id="safeCloseGame" class="safeCloseNotice">✅ All players have finished and left the live room. It is now safe to close this host page.</div><h2 id="hostRankingTitle">Player Ranking</h2>'
-if old_game_roster not in s:
-    raise SystemExit('Host game roster marker not found')
-s = s.replace(old_game_roster, new_game_roster, 1)
+# Bot navigation state for lightweight A* routing and stuck recovery.
+old_state = 'let room="",name="",team=null,socket=null,isHost=false,isObserver=false,observerAuthorized=false,observerPin="",pendingObserverPin="",teamAssigned=false,x=100,y=100,starX=300,starY=220,carried=0,immuneUntil=0,blue=0,red=0,streak=0,bestStreak=0,boostStarStreak=0,boostReady=false,boostUntil=0,qOpen=false,qLock=false,questionMode="star",stealTargetId=null,stealTargetName="",mathMode="add20",mapKey="compact",roundStart=0,roundEnd=0,roundActive=false,finished=false,lastFrame=performance.now(),lastSend=0,lastHeartbeat=0,lastBank=0,moved=false,toastTimer,hostTicker=null,facing="right",observerTarget="overview",demoMode=false,demoBot=null,botSolveAt=0,botLastTag=0,hostHadPlayers=false,safeToClose=false;'
+new_state = 'let room="",name="",team=null,socket=null,isHost=false,isObserver=false,observerAuthorized=false,observerPin="",pendingObserverPin="",teamAssigned=false,x=100,y=100,starX=300,starY=220,carried=0,immuneUntil=0,blue=0,red=0,streak=0,bestStreak=0,boostStarStreak=0,boostReady=false,boostUntil=0,qOpen=false,qLock=false,questionMode="star",stealTargetId=null,stealTargetName="",mathMode="add20",mapKey="compact",roundStart=0,roundEnd=0,roundActive=false,finished=false,lastFrame=performance.now(),lastSend=0,lastHeartbeat=0,lastBank=0,moved=false,toastTimer,hostTicker=null,facing="right",observerTarget="overview",demoMode=false,demoBot=null,botSolveAt=0,botLastTag=0,botPath=[],botPathIndex=0,botPathAt=0,botTargetKey="",botStuckAt=0,botLastX=0,botLastY=0,hostHadPlayers=false,safeToClose=false;'
+replace_once(old_state, new_state, 'state')
 
-# 3) Element references.
-old_refs = 'hostRoomCode=$("hostRoomCode"),hostObserverPin=$("hostObserverPin"),hostGameCode=$("hostGameCode"),playerCount=$("playerCount"),blueCount=$("blueCount"),redCount=$("redCount"),roster=$("roster"),startRoundBtn=$("startRound"),hostMsg=$("hostMsg"),\nhostTimer=$("hostTimer"),hostBlueScore=$("hostBlueScore"),hostRedScore=$("hostRedScore"),hostPhase=$("hostPhase"),hostGameRoster=$("hostGameRoster"),observerSelect=$("observerSelect"),'
-new_refs = 'hostRoomCode=$("hostRoomCode"),hostObserverPin=$("hostObserverPin"),hostGameCode=$("hostGameCode"),playerCount=$("playerCount"),blueCount=$("blueCount"),redCount=$("redCount"),roster=$("roster"),startRoundBtn=$("startRound"),hostMsg=$("hostMsg"),hostSafetyLobby=$("hostSafetyLobby"),safeCloseLobby=$("safeCloseLobby"),\nhostTimer=$("hostTimer"),hostBlueScore=$("hostBlueScore"),hostRedScore=$("hostRedScore"),hostPhase=$("hostPhase"),hostGameRoster=$("hostGameRoster"),hostSafetyGame=$("hostSafetyGame"),safeCloseGame=$("safeCloseGame"),observerSelect=$("observerSelect"),'
-if old_refs not in s:
-    raise SystemExit('Element reference marker not found')
-s = s.replace(old_refs, new_refs, 1)
+# Keep the bot's own stars nearby too, so the demo has a higher Math-question density.
+new_bot_star = '''// GAMEPLAY_TUNING_V2
+function botPlaceStar(){
+  if(!demoBot)return;
+  const minTravel=165,maxTravel=420;
+  let sx=mapW()*.5,sy=mapH()*.5,found=false;
+  for(let i=0;i<220;i++){
+    const radius=minTravel+Math.random()*(maxTravel-minTravel),angle=Math.random()*Math.PI*2;
+    const px=demoBot.x+Math.cos(angle)*radius,py=demoBot.y+Math.sin(angle)*radius;
+    if(starSpotSafe(px,py)){sx=px;sy=py;found=true;break}
+  }
+  if(!found){
+    outer:for(let radius=150;radius<=500;radius+=45){
+      for(let angle=0;angle<Math.PI*2;angle+=Math.PI/12){
+        const px=demoBot.x+Math.cos(angle)*radius,py=demoBot.y+Math.sin(angle)*radius;
+        if(starSpotSafe(px,py)){sx=px;sy=py;found=true;break outer}
+      }
+    }
+  }
+  if(!found){sx=mapW()*.5;sy=mapH()*.5}
+  demoBot.starX=sx;demoBot.starY=sy;botSolveAt=0;botTargetKey="";botPath=[];botPathIndex=0
+}
+function initDemoBot'''
+regex_once(r'function botPlaceStar\(\)\{\n.*?\n\}\nfunction initDemoBot', new_bot_star, 'bot star')
 
-# 4) Track whether players actually participated and whether closing is safe.
-old_state_tail = 'demoMode=false,demoBot=null,botSolveAt=0,botLastTag=0;'
-new_state_tail = 'demoMode=false,demoBot=null,botSolveAt=0,botLastTag=0,hostHadPlayers=false,safeToClose=false;'
-if old_state_tail not in s:
-    raise SystemExit('State marker not found')
-s = s.replace(old_state_tail, new_state_tail, 1)
+# Reset routing state whenever the bot demo starts.
+old_init = 'players.set(BOT_ID,demoBot);botLastTag=0;botPlaceStar();drawRemote(demoBot)'
+new_init = 'players.set(BOT_ID,demoBot);botLastTag=0;botPath=[];botPathIndex=0;botPathAt=0;botTargetKey="";botStuckAt=performance.now();botLastX=demoBot.x;botLastY=demoBot.y;botPlaceStar();drawRemote(demoBot)'
+replace_once(old_init, new_init, 'bot init')
 
-# 5) Reset safety state whenever a creator opens a fresh live room.
-old_open = 'function openHost(code){isHost=true;isObserver=false;observerAuthorized=false;pendingObserverPin="";observerPin=String(Math.floor(1000+Math.random()*9000));room=String(code);hostRoomCode.textContent=room;hostObserverPin.textContent=observerPin;hostGameCode.textContent=room;$("hostGame").classList.remove("observerGuest");show($("hostLobby"));renderLocalRecords();connectSocket();startHostTicker()}'
-new_open = 'function openHost(code){isHost=true;isObserver=false;observerAuthorized=false;pendingObserverPin="";hostHadPlayers=false;safeToClose=false;document.title="Math Star Chase and Bank";if(hostSafetyLobby)hostSafetyLobby.style.display="block";if(hostSafetyGame)hostSafetyGame.style.display="block";if(safeCloseLobby)safeCloseLobby.style.display="none";if(safeCloseGame)safeCloseGame.style.display="none";observerPin=String(Math.floor(1000+Math.random()*9000));room=String(code);hostRoomCode.textContent=room;hostObserverPin.textContent=observerPin;hostGameCode.textContent=room;$("hostGame").classList.remove("observerGuest");show($("hostLobby"));renderLocalRecords();connectSocket();startHostTicker()}'
-if old_open not in s:
-    raise SystemExit('openHost marker not found')
-s = s.replace(old_open, new_open, 1)
+# Replace angle-wiggling with lightweight A* pathfinding around map walls.
+new_bot_move = '''function botPointBlocked(px,py){
+  const pad=30,p=mapProfiles[mapKey]||mapProfiles.compact;
+  if(px<28||px>mapW()-28||py<34||py>mapH()-30)return true;
+  return p.walls.some(a=>{const rx=mapW()*a[0]/100,ry=mapH()*a[1]/100,rw=mapW()*a[2]/100,rh=mapH()*a[3]/100;return px+pad>rx&&px-pad<rx+rw&&py+pad>ry&&py-pad<ry+rh})
+}
+function botLineClear(ax,ay,bx,by){
+  const dist=Math.hypot(bx-ax,by-ay),steps=Math.max(1,Math.ceil(dist/22));
+  for(let i=1;i<=steps;i++){const t=i/steps;if(botPointBlocked(ax+(bx-ax)*t,ay+(by-ay)*t))return false}
+  return true
+}
+function botPlanPath(tx,ty){
+  if(!demoBot)return[];
+  if(botLineClear(demoBot.x,demoBot.y,tx,ty))return[{x:tx,y:ty}];
+  const cell=55,cols=Math.ceil(mapW()/cell),rows=Math.ceil(mapH()/cell),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const point=(gx,gy)=>({gx,gy,x:clamp(gx*cell+cell/2,28,mapW()-28),y:clamp(gy*cell+cell/2,34,mapH()-30)});
+  function nearest(px,py){
+    const gx0=clamp(Math.floor(px/cell),0,cols-1),gy0=clamp(Math.floor(py/cell),0,rows-1);
+    for(let r=0;r<=7;r++)for(let gy=Math.max(0,gy0-r);gy<=Math.min(rows-1,gy0+r);gy++)for(let gx=Math.max(0,gx0-r);gx<=Math.min(cols-1,gx0+r);gx++){
+      if(r&&Math.abs(gx-gx0)!==r&&Math.abs(gy-gy0)!==r)continue;const q=point(gx,gy);if(!botPointBlocked(q.x,q.y))return q
+    }
+    return null
+  }
+  const start=nearest(demoBot.x,demoBot.y),goal=nearest(tx,ty);if(!start||!goal)return[{x:tx,y:ty}];
+  const key=(gx,gy)=>gy*cols+gx,sk=key(start.gx,start.gy),gk=key(goal.gx,goal.gy),open=new Set([sk]),came=new Map(),g=new Map([[sk,0]]),f=new Map([[sk,Math.hypot(goal.gx-start.gx,goal.gy-start.gy)]]);
+  const dirs=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+  let guard=0;
+  while(open.size&&guard++<cols*rows*4){
+    let cur=null,best=Infinity;for(const k of open){const score=f.get(k)??Infinity;if(score<best){best=score;cur=k}}
+    if(cur===gk)break;open.delete(cur);const cgx=cur%cols,cgy=Math.floor(cur/cols);
+    for(const[dgx,dgy]of dirs){const ngx=cgx+dgx,ngy=cgy+dgy;if(ngx<0||ngy<0||ngx>=cols||ngy>=rows)continue;const np=point(ngx,ngy);if(botPointBlocked(np.x,np.y))continue;if(dgx&&dgy){const a=point(cgx+dgx,cgy),b=point(cgx,cgy+dgy);if(botPointBlocked(a.x,a.y)||botPointBlocked(b.x,b.y))continue}const nk=key(ngx,ngy),tent=(g.get(cur)??Infinity)+(dgx&&dgy?1.414:1);if(tent<(g.get(nk)??Infinity)){came.set(nk,cur);g.set(nk,tent);f.set(nk,tent+Math.hypot(goal.gx-ngx,goal.gy-ngy));open.add(nk)}}
+  }
+  if(gk!==sk&&!came.has(gk))return[{x:tx,y:ty}];
+  const rev=[];let cur=gk;while(cur!==sk){const gx=cur%cols,gy=Math.floor(cur/cols),q=point(gx,gy);rev.push({x:q.x,y:q.y});cur=came.get(cur);if(cur==null)break}rev.reverse();rev.push({x:tx,y:ty});
+  return rev
+}
+function botMoveToward(tx,ty,dt){
+  if(!demoBot)return;
+  const now=performance.now(),targetKey=Math.round(tx/70)+":"+Math.round(ty/70),movedSince=Math.hypot(demoBot.x-botLastX,demoBot.y-botLastY);
+  let force=false;if(!botStuckAt)botStuckAt=now;if(now-botStuckAt>700){force=movedSince<9;botLastX=demoBot.x;botLastY=demoBot.y;botStuckAt=now}
+  if(force||targetKey!==botTargetKey||now-botPathAt>650||botPathIndex>=botPath.length){botPath=botPlanPath(tx,ty);botPathIndex=0;botPathAt=now;botTargetKey=targetKey}
+  while(botPathIndex<botPath.length&&Math.hypot(botPath[botPathIndex].x-demoBot.x,botPath[botPathIndex].y-demoBot.y)<24)botPathIndex++;
+  const wp=botPath[botPathIndex]||{x:tx,y:ty},dx=wp.x-demoBot.x,dy=wp.y-demoBot.y,len=Math.hypot(dx,dy);if(len<2)return;
+  const step=Math.min(BOT_SPEED*dt,len),nx=Math.max(28,Math.min(mapW()-28,demoBot.x+dx/len*step)),ny=Math.max(34,Math.min(mapH()-30,demoBot.y+dy/len*step));
+  if(!botPointBlocked(nx,ny)){demoBot.facing=dx<0?"left":"right";demoBot.x=nx;demoBot.y=ny}else{botPathAt=0;botTargetKey=""}
+}
+function botStep'''
+regex_once(r'function botMoveToward\(tx,ty,dt\)\{\n.*?\n\}\nfunction botStep', new_bot_move, 'bot movement')
 
-# 6) Update the safety state from the live roster. Green message appears only after a round has finished and all players have left.
-old_roster_start = 'function renderHostRoster(){if(!isHost)return;const now=Date.now();for(const[id,p]of players){if(now-(p.lastSeen||0)>20000)players.delete(id)}refreshObserverSelect();updateObserver();const list=[...players.values()].sort((a,b)=>a.team.localeCompare(b.team)||a.name.localeCompare(b.name));const bc=list.filter(p=>p.team==="blue").length,rc=list.filter(p=>p.team==="red").length;'
-new_roster_start = 'function renderHostRoster(){if(!isHost)return;const now=Date.now();for(const[id,p]of players){if(now-(p.lastSeen||0)>20000)players.delete(id)}refreshObserverSelect();updateObserver();const list=[...players.values()].sort((a,b)=>a.team.localeCompare(b.team)||a.name.localeCompare(b.name));if(list.length>0)hostHadPlayers=true;safeToClose=!!(finished&&hostHadPlayers&&list.length===0);if(hostSafetyLobby)hostSafetyLobby.style.display=safeToClose?"none":"block";if(hostSafetyGame)hostSafetyGame.style.display=safeToClose?"none":"block";if(safeCloseLobby)safeCloseLobby.style.display=safeToClose?"block":"none";if(safeCloseGame)safeCloseGame.style.display=safeToClose?"block":"none";if(safeToClose)document.title="✅ Safe to close · Math Star Chase";else document.title="🔴 LIVE HOST · Keep Open";const bc=list.filter(p=>p.team==="blue").length,rc=list.filter(p=>p.team==="red").length;'
-if old_roster_start not in s:
-    raise SystemExit('renderHostRoster marker not found')
-s = s.replace(old_roster_start, new_roster_start, 1)
+# Smarter bot decisions and a slightly fairer contact distance when it tries to grab the player.
+new_bot_step = '''function botStep(dt){
+  if(!demoMode||!demoBot||!roundActive||finished)return;
+  const now=Date.now();demoBot.lastSeen=now;if(now<roundStart){drawRemote(demoBot);return}
+  if(qOpen&&questionMode==="steal"){drawRemote(demoBot);return}
+  let dPlayer=Math.hypot(x-demoBot.x,y-demoBot.y),canChase=carried>0&&demoBot.carried<LIMIT&&now>=immuneUntil&&dPlayer<320;
+  if(canChase){
+    botMoveToward(x,y,dt);dPlayer=Math.hypot(x-demoBot.x,y-demoBot.y);
+    if(!qOpen&&dPlayer<72&&now-botLastTag>2200){
+      botLastTag=now;
+      if(Math.random()<.72&&carried>0&&now>=immuneUntil){carried--;demoBot.carried=Math.min(LIMIT,demoBot.carried+1);immuneUntil=now+IMMUNE;flash("🤖 Bot solved and grabbed 1 star!");carryUI();placeStar()}
+    }
+  }else if(demoBot.carried>=LIMIT){
+    botMoveToward(mapW()*.94,mapH()*.5,dt);
+  }else{
+    botMoveToward(demoBot.starX,demoBot.starY,dt);
+    if(Math.hypot(demoBot.x-demoBot.starX,demoBot.y-demoBot.starY)<54){if(!botSolveAt)botSolveAt=now+550+Math.random()*500;if(now>=botSolveAt){if(Math.random()<.82)demoBot.carried=Math.min(LIMIT,demoBot.carried+1);botPlaceStar()}}else botSolveAt=0
+  }
+  if(demoBot.carried>0&&demoBot.x>mapW()*(1-BASE)){const pts=demoBot.carried;demoBot.carried=0;red+=pts;score();flash("🤖 Bot banked "+pts+" star"+(pts===1?"":"s")+"!");botPlaceStar()}
+  drawRemote(demoBot)
+}
 
-# 7) Native browser leave confirmation while the host session is not yet safe to close.
-old_unload = 'window.addEventListener("beforeunload",()=>{if(!isHost&&teamAssigned)send({type:"playerLeft",id:playerId})})'
-new_unload = 'window.addEventListener("beforeunload",e=>{if(isHost&&!safeToClose){e.preventDefault();e.returnValue="";return}if(!isHost&&teamAssigned)send({type:"playerLeft",id:playerId})})'
-if old_unload not in s:
-    raise SystemExit('beforeunload marker not found')
-s = s.replace(old_unload, new_unload, 1)
+function connectSocket'''
+regex_once(r'function botStep\(dt\)\{\n.*?\n\}\n\nfunction connectSocket', new_bot_step, 'bot step')
+
+# Spawn each pupil's next star inside a nearby ring rather than anywhere across a large map.
+new_place_star = '''function placeStar(){
+  if(!teamAssigned)return;
+  const minTravel=175,maxTravel=460;
+  let sx=mapW()*.5,sy=mapH()*.5,found=false;
+  for(let i=0;i<260;i++){
+    const radius=minTravel+Math.random()*(maxTravel-minTravel),angle=Math.random()*Math.PI*2;
+    const px=x+Math.cos(angle)*radius,py=y+Math.sin(angle)*radius;
+    if(starSpotSafe(px,py)){sx=px;sy=py;found=true;break}
+  }
+  if(!found){
+    outer:for(let radius=150;radius<=540;radius+=45){
+      for(let angle=0;angle<Math.PI*2;angle+=Math.PI/12){
+        const px=x+Math.cos(angle)*radius,py=y+Math.sin(angle)*radius;
+        if(starSpotSafe(px,py)){sx=px;sy=py;found=true;break outer}
+      }
+    }
+  }
+  if(!found){sx=mapW()*.5;sy=mapH()*.5}
+  starX=sx;starY=sy;star.style.left=starX+"px";star.style.top=starY+"px";star.style.display=carried<LIMIT?"block":"none"
+}
+function checkStar'''
+regex_once(r'function placeStar\(\)\{\n.*?\n\}\nfunction checkStar', new_place_star, 'player star')
+
+# Bot grabbing: larger demo-only contact radius, respect immunity, and permit contact while stationary.
+old_check_tag = 'function checkTag(){if(!roundActive||Date.now()<roundStart||qOpen||carried>=LIMIT)return;const now=Date.now();for(const[id,p]of players){if(p.team===team||p.carried<=0||now-(p.lastSeen||0)>5000||Math.hypot(x-p.x,y-p.y)>TAG)continue;const last=tagCooldown.get(id)||0;if(now-last<1800)continue;tagCooldown.set(id,now);openQuestion("steal",id,p.name);break}}'
+new_check_tag = 'function checkTag(){if(!roundActive||Date.now()<roundStart||qOpen||carried>=LIMIT)return;const now=Date.now();for(const[id,p]of players){const reach=demoMode&&id===BOT_ID?84:TAG;if(p.team===team||p.carried<=0||now<(p.immuneUntil||0)||now-(p.lastSeen||0)>5000||Math.hypot(x-p.x,y-p.y)>reach)continue;const last=tagCooldown.get(id)||0;if(now-last<1800)continue;tagCooldown.set(id,now);openQuestion("steal",id,p.name);break}}'
+replace_once(old_check_tag, new_check_tag, 'tag check')
+
+old_loop_piece = 'checkStar();checkBank();checkTag()}}if(now-lastHeartbeat>5000)'
+new_loop_piece = 'checkStar();checkBank()}}if(roundActive&&Date.now()>=roundStart&&!qOpen){checkTag()}if(now-lastHeartbeat>5000)'
+replace_once(old_loop_piece, new_loop_piece, 'stationary tag loop')
 
 p.write_text(s, encoding='utf-8')
