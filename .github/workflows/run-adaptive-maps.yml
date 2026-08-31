@@ -1,4 +1,4 @@
-name: Host safety and everyone-left notice
+name: Gameplay tuning for stars and bot
 
 on:
   push:
@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Add host safety notice
+      - name: Tune star distance and bot gameplay
         run: python .github/scripts/device_compatibility.py
       - name: Validate JavaScript
         run: |
@@ -26,17 +26,17 @@ jobs:
           Path('/tmp/star-game.js').write_text(m.group(1),encoding='utf-8')
           PY
           node --check /tmp/star-game.js
-      - name: Confirm host safety markers
+      - name: Confirm gameplay tuning markers
         run: |
-          grep -q 'HOST_SAFETY_V1' index.html
-          grep -q 'All players have finished and left the live room' index.html
-          grep -q 'safeToClose' index.html
-          grep -q 'beforeunload' index.html
-          grep -q 'LIVE HOST · Keep Open' index.html
+          grep -q 'GAMEPLAY_TUNING_V2' index.html
+          grep -q 'function botPlanPath' index.html
+          grep -q 'maxTravel=460' index.html
+          grep -q 'id===BOT_ID?84:TAG' index.html
+          grep -q 'botPointBlocked' index.html
       - name: Commit changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Add host close warning and everyone-left notice"
+          git commit -m "Improve star spacing and bot pathfinding"
           git push
