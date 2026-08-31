@@ -118,7 +118,7 @@ blueScore=$("blueScore"),redScore=$("redScore"),carryValue=$("carryValue"),strea
 sCorrect=$("sCorrect"),sAccuracy=$("sAccuracy"),sStreak=$("sStreak"),sCollected=$("sCollected"),sStolen=$("sStolen"),sBanked=$("sBanked"),resultNote=$("resultNote"),demoResultActions=$("demoResultActions"),demoAgain=$("demoAgain"),demoHome=$("demoHome");
 const playerId=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random()).slice(0,8),players=new Map(),move={up:false,down:false,left:false,right:false},tagCooldown=new Map(),seenEvents=new Set(),stats={attempts:0,correct:0,collected:0,stolen:0,banked:0};
 const RECORD_KEY="mathStarChaseLocalRecordsV1",MAX_SAVED_ROUNDS=30,BOT_ID="demo-bot",BOT_SPEED=170;
-let room="",name="",team=null,socket=null,isHost=false,isObserver=false,observerAuthorized=false,observerPin="",pendingObserverPin="",teamAssigned=false,x=100,y=100,starX=300,starY=220,carried=0,immuneUntil=0,blue=0,red=0,streak=0,bestStreak=0,boostStarStreak=0,boostReady=false,boostUntil=0,qOpen=false,qLock=false,questionMode="star",stealTargetId=null,stealTargetName="",mathMode="add20",mapKey="compact",roundStart=0,roundEnd=0,roundActive=false,finished=false,lastFrame=performance.now(),lastSend=0,lastHeartbeat=0,lastBank=0,moved=false,toastTimer,hostTicker=null,facing="right",observerTarget="overview",demoMode=false,demoBot=null,botSolveAt=0,botLastTag=0,hostHadPlayers=false,safeToClose=false;
+let room="",name="",team=null,socket=null,isHost=false,isObserver=false,observerAuthorized=false,observerPin="",pendingObserverPin="",teamAssigned=false,x=100,y=100,starX=300,starY=220,carried=0,immuneUntil=0,blue=0,red=0,streak=0,bestStreak=0,boostStarStreak=0,boostReady=false,boostUntil=0,qOpen=false,qLock=false,questionMode="star",stealTargetId=null,stealTargetName="",mathMode="add20",mapKey="compact",roundStart=0,roundEnd=0,roundActive=false,finished=false,lastFrame=performance.now(),lastSend=0,lastHeartbeat=0,lastBank=0,moved=false,toastTimer,hostTicker=null,facing="right",observerTarget="overview",demoMode=false,demoBot=null,botSolveAt=0,botLastTag=0,botPath=[],botPathIndex=0,botPathAt=0,botTargetKey="",botStuckAt=0,botLastX=0,botLastY=0,hostHadPlayers=false,safeToClose=false;
 const mapProfiles={
  compact:{name:"Compact",w:1300,h:820,paths:[[12,24,76,8],[12,68,76,8]],walls:[[23,11,4,27],[23,56,4,31],[73,11,4,31],[73,60,4,27],[37,29,22,4],[42,66,21,4],[48,40,4,16]],bushes:[[33,46],[65,48],[50,20]]},
  standard:{name:"Standard",w:1700,h:1050,paths:[[11,20,78,8],[11,72,78,8]],walls:[[18,10,4,26],[18,54,4,34],[31,24,4,31],[31,70,4,18],[45,10,4,25],[45,50,4,38],[59,24,4,31],[59,70,4,18],[73,10,4,26],[73,54,4,34],[22,42,21,4],[57,42,21,4]],bushes:[[25,64],[38,18],[50,62],[64,18],[77,64]]},
@@ -140,20 +140,30 @@ function openHost(code){isHost=true;isObserver=false;observerAuthorized=false;pe
 function enterArena(){const n=safe(playerName.value);if(!n){nameMsg.textContent="Please enter a name.";return}name=n;roomCode.textContent=room;show($("game"));waiting.classList.add("open");star.style.display="none";connectSocket()}
 
 function clearDemoActors(){world.querySelectorAll(".player").forEach(el=>el.remove())}
+// GAMEPLAY_TUNING_V2
 function botPlaceStar(){
   if(!demoBot)return;
-  const side=Math.max(210,mapW()*.18),top=90,minTravel=Math.min(400,Math.max(170,Math.min(mapW(),mapH())*.2));
+  const minTravel=165,maxTravel=420;
   let sx=mapW()*.5,sy=mapH()*.5,found=false;
-  for(let i=0;i<180;i++){
-    const px=side+Math.random()*Math.max(20,mapW()-side*2),py=top+Math.random()*Math.max(20,mapH()-top*2);
-    if(Math.hypot(px-demoBot.x,py-demoBot.y)>=minTravel&&starSpotSafe(px,py)){sx=px;sy=py;found=true;break}
+  for(let i=0;i<220;i++){
+    const radius=minTravel+Math.random()*(maxTravel-minTravel),angle=Math.random()*Math.PI*2;
+    const px=demoBot.x+Math.cos(angle)*radius,py=demoBot.y+Math.sin(angle)*radius;
+    if(starSpotSafe(px,py)){sx=px;sy=py;found=true;break}
+  }
+  if(!found){
+    outer:for(let radius=150;radius<=500;radius+=45){
+      for(let angle=0;angle<Math.PI*2;angle+=Math.PI/12){
+        const px=demoBot.x+Math.cos(angle)*radius,py=demoBot.y+Math.sin(angle)*radius;
+        if(starSpotSafe(px,py)){sx=px;sy=py;found=true;break outer}
+      }
+    }
   }
   if(!found){sx=mapW()*.5;sy=mapH()*.5}
-  demoBot.starX=sx;demoBot.starY=sy;botSolveAt=0
+  demoBot.starX=sx;demoBot.starY=sy;botSolveAt=0;botTargetKey="";botPath=[];botPathIndex=0
 }
 function initDemoBot(){
   demoBot={id:BOT_ID,name:"Bot",team:"red",x:mapW()*.90,y:mapH()*.5,starX:0,starY:0,carried:0,immuneUntil:0,boostUntil:0,facing:"left",lastSeen:Date.now()};
-  players.set(BOT_ID,demoBot);botLastTag=0;botPlaceStar();drawRemote(demoBot)
+  players.set(BOT_ID,demoBot);botLastTag=0;botPath=[];botPathIndex=0;botPathAt=0;botTargetKey="";botStuckAt=performance.now();botLastX=demoBot.x;botLastY=demoBot.y;botPlaceStar();drawRemote(demoBot)
 }
 function startBotDemo(){
   if(socket){try{socket.close()}catch(e){}socket=null}
@@ -168,40 +178,69 @@ function startBotDemo(){
 function leaveBotDemo(){
   stop();roundActive=false;finished=true;demoMode=false;demoBot=null;teamAssigned=false;team=null;players.clear();clearDemoActors();star.style.display="none";results.classList.remove("open");waiting.classList.remove("open");show($("lobby"));msg.textContent=""
 }
+function botPointBlocked(px,py){
+  const pad=30,p=mapProfiles[mapKey]||mapProfiles.compact;
+  if(px<28||px>mapW()-28||py<34||py>mapH()-30)return true;
+  return p.walls.some(a=>{const rx=mapW()*a[0]/100,ry=mapH()*a[1]/100,rw=mapW()*a[2]/100,rh=mapH()*a[3]/100;return px+pad>rx&&px-pad<rx+rw&&py+pad>ry&&py-pad<ry+rh})
+}
+function botLineClear(ax,ay,bx,by){
+  const dist=Math.hypot(bx-ax,by-ay),steps=Math.max(1,Math.ceil(dist/22));
+  for(let i=1;i<=steps;i++){const t=i/steps;if(botPointBlocked(ax+(bx-ax)*t,ay+(by-ay)*t))return false}
+  return true
+}
+function botPlanPath(tx,ty){
+  if(!demoBot)return[];
+  if(botLineClear(demoBot.x,demoBot.y,tx,ty))return[{x:tx,y:ty}];
+  const cell=55,cols=Math.ceil(mapW()/cell),rows=Math.ceil(mapH()/cell),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const point=(gx,gy)=>({gx,gy,x:clamp(gx*cell+cell/2,28,mapW()-28),y:clamp(gy*cell+cell/2,34,mapH()-30)});
+  function nearest(px,py){
+    const gx0=clamp(Math.floor(px/cell),0,cols-1),gy0=clamp(Math.floor(py/cell),0,rows-1);
+    for(let r=0;r<=7;r++)for(let gy=Math.max(0,gy0-r);gy<=Math.min(rows-1,gy0+r);gy++)for(let gx=Math.max(0,gx0-r);gx<=Math.min(cols-1,gx0+r);gx++){
+      if(r&&Math.abs(gx-gx0)!==r&&Math.abs(gy-gy0)!==r)continue;const q=point(gx,gy);if(!botPointBlocked(q.x,q.y))return q
+    }
+    return null
+  }
+  const start=nearest(demoBot.x,demoBot.y),goal=nearest(tx,ty);if(!start||!goal)return[{x:tx,y:ty}];
+  const key=(gx,gy)=>gy*cols+gx,sk=key(start.gx,start.gy),gk=key(goal.gx,goal.gy),open=new Set([sk]),came=new Map(),g=new Map([[sk,0]]),f=new Map([[sk,Math.hypot(goal.gx-start.gx,goal.gy-start.gy)]]);
+  const dirs=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+  let guard=0;
+  while(open.size&&guard++<cols*rows*4){
+    let cur=null,best=Infinity;for(const k of open){const score=f.get(k)??Infinity;if(score<best){best=score;cur=k}}
+    if(cur===gk)break;open.delete(cur);const cgx=cur%cols,cgy=Math.floor(cur/cols);
+    for(const[dgx,dgy]of dirs){const ngx=cgx+dgx,ngy=cgy+dgy;if(ngx<0||ngy<0||ngx>=cols||ngy>=rows)continue;const np=point(ngx,ngy);if(botPointBlocked(np.x,np.y))continue;if(dgx&&dgy){const a=point(cgx+dgx,cgy),b=point(cgx,cgy+dgy);if(botPointBlocked(a.x,a.y)||botPointBlocked(b.x,b.y))continue}const nk=key(ngx,ngy),tent=(g.get(cur)??Infinity)+(dgx&&dgy?1.414:1);if(tent<(g.get(nk)??Infinity)){came.set(nk,cur);g.set(nk,tent);f.set(nk,tent+Math.hypot(goal.gx-ngx,goal.gy-ngy));open.add(nk)}}
+  }
+  if(gk!==sk&&!came.has(gk))return[{x:tx,y:ty}];
+  const rev=[];let cur=gk;while(cur!==sk){const gx=cur%cols,gy=Math.floor(cur/cols),q=point(gx,gy);rev.push({x:q.x,y:q.y});cur=came.get(cur);if(cur==null)break}rev.reverse();rev.push({x:tx,y:ty});
+  return rev
+}
 function botMoveToward(tx,ty,dt){
   if(!demoBot)return;
-  const dx=tx-demoBot.x,dy=ty-demoBot.y,len=Math.hypot(dx,dy);if(len<2)return;
-  const base=Math.atan2(dy,dx),step=BOT_SPEED*dt,tries=[0,.55,-.55,1.1,-1.1,Math.PI];
-  for(const a of tries){
-    const ang=base+a,nx=Math.max(28,Math.min(mapW()-28,demoBot.x+Math.cos(ang)*step)),ny=Math.max(34,Math.min(mapH()-30,demoBot.y+Math.sin(ang)*step));
-    if(!blocked(nx,ny)){demoBot.facing=Math.cos(ang)<0?"left":"right";demoBot.x=nx;demoBot.y=ny;return}
-  }
+  const now=performance.now(),targetKey=Math.round(tx/70)+":"+Math.round(ty/70),movedSince=Math.hypot(demoBot.x-botLastX,demoBot.y-botLastY);
+  let force=false;if(!botStuckAt)botStuckAt=now;if(now-botStuckAt>700){force=movedSince<9;botLastX=demoBot.x;botLastY=demoBot.y;botStuckAt=now}
+  if(force||targetKey!==botTargetKey||now-botPathAt>650||botPathIndex>=botPath.length){botPath=botPlanPath(tx,ty);botPathIndex=0;botPathAt=now;botTargetKey=targetKey}
+  while(botPathIndex<botPath.length&&Math.hypot(botPath[botPathIndex].x-demoBot.x,botPath[botPathIndex].y-demoBot.y)<24)botPathIndex++;
+  const wp=botPath[botPathIndex]||{x:tx,y:ty},dx=wp.x-demoBot.x,dy=wp.y-demoBot.y,len=Math.hypot(dx,dy);if(len<2)return;
+  const step=Math.min(BOT_SPEED*dt,len),nx=Math.max(28,Math.min(mapW()-28,demoBot.x+dx/len*step)),ny=Math.max(34,Math.min(mapH()-30,demoBot.y+dy/len*step));
+  if(!botPointBlocked(nx,ny)){demoBot.facing=dx<0?"left":"right";demoBot.x=nx;demoBot.y=ny}else{botPathAt=0;botTargetKey=""}
 }
 function botStep(dt){
   if(!demoMode||!demoBot||!roundActive||finished)return;
   const now=Date.now();demoBot.lastSeen=now;if(now<roundStart){drawRemote(demoBot);return}
   if(qOpen&&questionMode==="steal"){drawRemote(demoBot);return}
-  const dPlayer=Math.hypot(x-demoBot.x,y-demoBot.y),canChase=carried>0&&demoBot.carried<LIMIT&&now>=immuneUntil&&dPlayer<250;
+  let dPlayer=Math.hypot(x-demoBot.x,y-demoBot.y),canChase=carried>0&&demoBot.carried<LIMIT&&now>=immuneUntil&&dPlayer<320;
   if(canChase){
-    botMoveToward(x,y,dt);
-    if(!qOpen&&dPlayer<TAG+5&&now-botLastTag>2200){
+    botMoveToward(x,y,dt);dPlayer=Math.hypot(x-demoBot.x,y-demoBot.y);
+    if(!qOpen&&dPlayer<72&&now-botLastTag>2200){
       botLastTag=now;
-      if(Math.random()<.72&&carried>0&&now>=immuneUntil){
-        carried--;demoBot.carried=Math.min(LIMIT,demoBot.carried+1);immuneUntil=now+IMMUNE;flash("🤖 Bot solved and grabbed 1 star!");carryUI();placeStar()
-      }
+      if(Math.random()<.72&&carried>0&&now>=immuneUntil){carried--;demoBot.carried=Math.min(LIMIT,demoBot.carried+1);immuneUntil=now+IMMUNE;flash("🤖 Bot solved and grabbed 1 star!");carryUI();placeStar()}
     }
   }else if(demoBot.carried>=LIMIT){
     botMoveToward(mapW()*.94,mapH()*.5,dt);
   }else{
     botMoveToward(demoBot.starX,demoBot.starY,dt);
-    if(Math.hypot(demoBot.x-demoBot.starX,demoBot.y-demoBot.starY)<54){
-      if(!botSolveAt)botSolveAt=now+550+Math.random()*500;
-      if(now>=botSolveAt){if(Math.random()<.82)demoBot.carried=Math.min(LIMIT,demoBot.carried+1);botPlaceStar()}
-    }else botSolveAt=0
+    if(Math.hypot(demoBot.x-demoBot.starX,demoBot.y-demoBot.starY)<54){if(!botSolveAt)botSolveAt=now+550+Math.random()*500;if(now>=botSolveAt){if(Math.random()<.82)demoBot.carried=Math.min(LIMIT,demoBot.carried+1);botPlaceStar()}}else botSolveAt=0
   }
-  if(demoBot.carried>0&&demoBot.x>mapW()*(1-BASE)){
-    const pts=demoBot.carried;demoBot.carried=0;red+=pts;score();flash("🤖 Bot banked "+pts+" star"+(pts===1?"":"s")+"!");botPlaceStar()
-  }
+  if(demoBot.carried>0&&demoBot.x>mapW()*(1-BASE)){const pts=demoBot.carried;demoBot.carried=0;red+=pts;score();flash("🤖 Bot banked "+pts+" star"+(pts===1?"":"s")+"!");botPlaceStar()}
   drawRemote(demoBot)
 }
 
@@ -278,30 +317,22 @@ function starSpotSafe(px,py){
 }
 function placeStar(){
   if(!teamAssigned)return;
-  const side=Math.max(210,mapW()*.18),top=90,minTravel=Math.min(430,Math.max(180,Math.min(mapW(),mapH())*.22));
+  const minTravel=175,maxTravel=460;
   let sx=mapW()*.5,sy=mapH()*.5,found=false;
-  for(let i=0;i<220;i++){
-    const px=side+Math.random()*Math.max(20,mapW()-side*2),py=top+Math.random()*Math.max(20,mapH()-top*2);
-    if(Math.hypot(px-x,py-y)>=minTravel&&starSpotSafe(px,py)){sx=px;sy=py;found=true;break}
+  for(let i=0;i<260;i++){
+    const radius=minTravel+Math.random()*(maxTravel-minTravel),angle=Math.random()*Math.PI*2;
+    const px=x+Math.cos(angle)*radius,py=y+Math.sin(angle)*radius;
+    if(starSpotSafe(px,py)){sx=px;sy=py;found=true;break}
   }
   if(!found){
-    const step=70;
-    outer:for(let py=top;py<=mapH()-top;py+=step){
-      for(let px=side;px<=mapW()-side;px+=step){
+    outer:for(let radius=150;radius<=540;radius+=45){
+      for(let angle=0;angle<Math.PI*2;angle+=Math.PI/12){
+        const px=x+Math.cos(angle)*radius,py=y+Math.sin(angle)*radius;
         if(starSpotSafe(px,py)){sx=px;sy=py;found=true;break outer}
       }
     }
   }
-  if(!found){
-    sx=mapW()*.5;sy=mapH()*.5;
-    for(let radius=70;radius<Math.max(mapW(),mapH())&&!found;radius+=70){
-      for(let angle=0;angle<Math.PI*2;angle+=Math.PI/8){
-        const px=Math.max(side,Math.min(mapW()-side,sx+Math.cos(angle)*radius));
-        const py=Math.max(top,Math.min(mapH()-top,sy+Math.sin(angle)*radius));
-        if(starSpotSafe(px,py)){sx=px;sy=py;found=true;break}
-      }
-    }
-  }
+  if(!found){sx=mapW()*.5;sy=mapH()*.5}
   starX=sx;starY=sy;star.style.left=starX+"px";star.style.top=starY+"px";star.style.display=carried<LIMIT?"block":"none"
 }
 function checkStar(){if(!roundActive||Date.now()<roundStart||qOpen||carried>=LIMIT)return;if(Math.hypot(x-starX,y-starY)<52)openQuestion()}
@@ -317,12 +348,12 @@ function activateBoost(){const now=Date.now();if(!boostReady||!roundActive||fini
 function answer(btn,v,c){if(qLock)return;qLock=true;const mode=questionMode,targetId=stealTargetId;stats.attempts++;[...answers.children].forEach(b=>b.disabled=true);if(v===c){btn.classList.add("good");stats.correct++;streak++;bestStreak=Math.max(bestStreak,streak);if(mode==="steal"){if(demoMode&&targetId===BOT_ID&&demoBot&&demoBot.carried>0&&Date.now()>=demoBot.immuneUntil){demoBot.carried--;demoBot.immuneUntil=Date.now()+IMMUNE;carried=Math.min(LIMIT,carried+1);stats.stolen++;feedback.textContent="Correct! ⚡ You grabbed 1 ⭐ from Bot!";carryUI();drawRemote(demoBot)}else{feedback.textContent="Correct! ⚡ Grab unlocked!";if(targetId)send({type:"tagAttempt",taggerId:playerId,targetId,taggerName:name,challengePassed:true,ts:Date.now()})}}else{stats.collected++;recordStarForBoost();carried=Math.min(LIMIT,carried+1);feedback.textContent=boostReady?"Correct! ⭐ Star picked up. ⚡ Speed Boost ready!":"Correct! ⭐ Star picked up.";carryUI();sendState()}}else{btn.classList.add("bad");streak=0;if(mode==="star")boostStarStreak=0;[...answers.children].forEach(b=>{if(Number(b.textContent)===c)b.classList.add("good")});feedback.textContent=mode==="steal"?"No grab. Answer: "+c:"Answer: "+c+". Try the next star!";streakValue.textContent=0;updateBoostUI()}setTimeout(()=>{question.classList.remove("open");qOpen=false;qLock=false;if(mode==="star")placeStar();questionMode="star";stealTargetId=null;stealTargetName="";updateBoostUI()},v===c?700:1000)}
 function carryUI(){carryValue.textContent=carried;streakValue.textContent=streak;drawSelf();updateBoostUI();if(!teamAssigned)return;if(carried>=LIMIT){star.style.display="none";hint.textContent="You have 3 ⭐. Get back to your "+team.toUpperCase()+" base!"}else if(roundActive&&Date.now()>=roundStart){star.style.display="block";hint.textContent=carried?"Carry "+carried+" safely to your base — or chase another nearby ⭐.":"Your ⭐ is nearby. Chase it and solve!"}}
 function checkBank(){if(!roundActive||Date.now()<roundStart||!team||carried<=0)return;const w=mapW(),inBase=team==="blue"?x<w*BASE:x>w*(1-BASE);if(!inBase||Date.now()-lastBank<700)return;lastBank=Date.now();const pts=carried;carried=0;stats.banked+=pts;const eventId=eid();seenEvents.add(eventId);if(team==="blue")blue+=pts;else red+=pts;score();send({type:"bank",eventId,team,points:pts});flash("🏦 Banked "+pts+" star"+(pts===1?"":"s")+"!");carryUI();placeStar();sendState()}
-function checkTag(){if(!roundActive||Date.now()<roundStart||qOpen||carried>=LIMIT)return;const now=Date.now();for(const[id,p]of players){if(p.team===team||p.carried<=0||now-(p.lastSeen||0)>5000||Math.hypot(x-p.x,y-p.y)>TAG)continue;const last=tagCooldown.get(id)||0;if(now-last<1800)continue;tagCooldown.set(id,now);openQuestion("steal",id,p.name);break}}
+function checkTag(){if(!roundActive||Date.now()<roundStart||qOpen||carried>=LIMIT)return;const now=Date.now();for(const[id,p]of players){const reach=demoMode&&id===BOT_ID?84:TAG;if(p.team===team||p.carried<=0||now<(p.immuneUntil||0)||now-(p.lastSeen||0)>5000||Math.hypot(x-p.x,y-p.y)>reach)continue;const last=tagCooldown.get(id)||0;if(now-last<1800)continue;tagCooldown.set(id,now);openQuestion("steal",id,p.name);break}}
 function incomingTag(d){const now=Date.now(),p=players.get(d.taggerId);if(d.challengePassed!==true||!roundActive||now<roundStart||carried<=0||now<immuneUntil||!p||p.team===team||p.carried>=LIMIT)return;carried--;immuneUntil=now+IMMUNE;flash("💫 "+safe(d.taggerName||"Opponent")+" solved correctly and grabbed 1 star!");carryUI();placeStar();sendState();send({type:"tagSuccess",taggerId:d.taggerId,targetId:playerId,targetName:name})}
 function tagSuccess(d){if(!roundActive||Date.now()<roundStart||carried>=LIMIT)return;carried++;stats.stolen++;flash("⚡ You grabbed 1 star from "+safe(d.targetName||"an opponent")+"!");carryUI();sendState()}
 function wallRects(){const ar=world.getBoundingClientRect();return[...arena.querySelectorAll(".wall")].map(el=>{const r=el.getBoundingClientRect();return{x:r.left-ar.left-8,y:r.top-ar.top-8,w:r.width+16,h:r.height+16}})}function blocked(nx,ny){const rad=23;return wallRects().some(r=>nx+rad>r.x&&nx-rad<r.x+r.w&&ny+rad>r.y&&ny-rad<r.y+r.h)}function stop(){Object.keys(move).forEach(k=>move[k]=false)}
 function prune(){const now=Date.now();for(const[id,p]of players){if(now-(p.lastSeen||0)>25000){players.delete(id);const el=document.querySelector('[data-player="'+id+'"]');if(el)el.remove()}}}
-function loop(now){const dt=Math.min(.05,(now-lastFrame)/1000);lastFrame=now;updateRoundClock();updateBoostUI();if(demoMode)botStep(dt);if(!isHost)prune();if(teamAssigned&&$("game").classList.contains("active")){if(roundActive&&Date.now()>=roundStart&&!qOpen){let dx=(move.right?1:0)-(move.left?1:0),dy=(move.down?1:0)-(move.up?1:0);if(dx||dy){if(dx<0)facing="left";else if(dx>0)facing="right";const len=Math.hypot(dx,dy)||1;dx/=len;dy/=len;const moveSpeed=SPEED*(Date.now()<boostUntil?BOOST_MULT:1),nx=Math.max(28,Math.min(mapW()-28,x+dx*moveSpeed*dt)),ny=Math.max(34,Math.min(mapH()-30,y+dy*moveSpeed*dt));if(!blocked(nx,ny)){x=nx;y=ny;drawSelf();moved=true;sendPos()}checkStar();checkBank();checkTag()}}if(now-lastHeartbeat>5000){lastHeartbeat=now;sendState()}const me=document.querySelector('[data-player="'+playerId+'"]');if(me){me.classList.toggle("immune",immuneUntil>Date.now());me.classList.toggle("boosting",boostUntil>Date.now())}}requestAnimationFrame(loop)}requestAnimationFrame(loop)
+function loop(now){const dt=Math.min(.05,(now-lastFrame)/1000);lastFrame=now;updateRoundClock();updateBoostUI();if(demoMode)botStep(dt);if(!isHost)prune();if(teamAssigned&&$("game").classList.contains("active")){if(roundActive&&Date.now()>=roundStart&&!qOpen){let dx=(move.right?1:0)-(move.left?1:0),dy=(move.down?1:0)-(move.up?1:0);if(dx||dy){if(dx<0)facing="left";else if(dx>0)facing="right";const len=Math.hypot(dx,dy)||1;dx/=len;dy/=len;const moveSpeed=SPEED*(Date.now()<boostUntil?BOOST_MULT:1),nx=Math.max(28,Math.min(mapW()-28,x+dx*moveSpeed*dt)),ny=Math.max(34,Math.min(mapH()-30,y+dy*moveSpeed*dt));if(!blocked(nx,ny)){x=nx;y=ny;drawSelf();moved=true;sendPos()}checkStar();checkBank()}}if(roundActive&&Date.now()>=roundStart&&!qOpen){checkTag()}if(now-lastHeartbeat>5000){lastHeartbeat=now;sendState()}const me=document.querySelector('[data-player="'+playerId+'"]');if(me){me.classList.toggle("immune",immuneUntil>Date.now());me.classList.toggle("boosting",boostUntil>Date.now())}}requestAnimationFrame(loop)}requestAnimationFrame(loop)
 function bind(id,dir){const el=$(id),on=e=>{e.preventDefault();if(roundActive&&Date.now()>=roundStart&&!qOpen){if(dir==="left"||dir==="right"){facing=dir;drawSelf()}move[dir]=true}},off=e=>{e.preventDefault();move[dir]=false;if(moved)sendPos(true)};el.addEventListener("pointerdown",on);["pointerup","pointercancel","pointerleave"].forEach(ev=>el.addEventListener(ev,off))}
 [["up","up"],["down","down"],["left","left"],["right","right"]].forEach(a=>bind(...a));const keys={ArrowUp:"up",w:"up",W:"up",ArrowDown:"down",s:"down",S:"down",ArrowLeft:"left",a:"left",A:"left",ArrowRight:"right",d:"right",D:"right"};document.addEventListener("keydown",e=>{const d=keys[e.key];if(!d||!roundActive||Date.now()<roundStart||qOpen)return;e.preventDefault();if(d==="left"||d==="right"){facing=d;drawSelf()}move[d]=true});document.addEventListener("keyup",e=>{const d=keys[e.key];if(!d)return;e.preventDefault();move[d]=false;if(moved)sendPos(true)});window.addEventListener("blur",stop);window.addEventListener("resize",()=>{if(teamAssigned)updateCamera();if(isHost||isObserver)updateObserver()});window.addEventListener("orientationchange",()=>setTimeout(()=>{if(teamAssigned)updateCamera();if(isHost||isObserver)updateObserver()},120))
 tryBotBtn.addEventListener("click",startBotDemo);joinBtn.addEventListener("click",joinRoom);joinObserverBtn.addEventListener("click",joinObserver);creatorBtn.addEventListener("click",creatorRoom);roomInput.addEventListener("input",()=>roomInput.value=roomInput.value.replace(/\D/g,""));observerPinInput.addEventListener("input",()=>observerPinInput.value=observerPinInput.value.replace(/\D/g,""));roomInput.addEventListener("keydown",e=>{if(e.key==="Enter")joinRoom()});observerPinInput.addEventListener("keydown",e=>{if(e.key==="Enter")joinObserver()});creatorPassword.addEventListener("keydown",e=>{if(e.key==="Enter")creatorRoom()});enterBtn.addEventListener("click",enterArena);playerName.addEventListener("keydown",e=>{if(e.key==="Enter")enterArena()});startRoundBtn.addEventListener("click",startByHost);mathModeSelect.addEventListener("change",()=>setMathMode(mathModeSelect.value));playAgain.addEventListener("click",()=>{show($("hostLobby"));renderHostRoster();hostMsg.textContent="Ready for another round. Press Start when your class is ready."});
