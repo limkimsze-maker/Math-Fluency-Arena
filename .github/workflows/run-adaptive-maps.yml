@@ -1,4 +1,4 @@
-name: Add live room capacity UI
+name: Remove observer PIN access
 
 on:
   push:
@@ -13,8 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Add public room capacity display
-        run: python .github/scripts/room_capacity_ui.py
+      - name: Remove guest observer PIN access
+        run: python .github/scripts/remove_observer_pin.py
       - name: Validate JavaScript
         run: |
           python3 - <<'PY'
@@ -26,18 +26,20 @@ jobs:
           Path('/tmp/star-game.js').write_text(m.group(1),encoding='utf-8')
           PY
           node --check /tmp/star-game.js
-      - name: Confirm room capacity UI
+      - name: Confirm observer PIN removal
         run: |
-          grep -q 'ROOM_CAPACITY_UI_V1' index.html
-          grep -q 'id="roomCapacity"' index.html
-          grep -q 'id="createRoomBtn"' index.html
-          grep -q '/api/room-capacity' index.html
-          grep -q 'Creator Room is separately reserved' index.html
-          grep -q 'createRoomBtn.addEventListener("click",createRoom)' index.html
+          grep -q 'OBSERVER_PIN_REMOVED_V1' index.html
+          grep -q 'id="observerSelect"' index.html
+          grep -q '👁️ Live Observer' index.html
+          if grep -q 'id="observerPinInput"' index.html; then exit 1; fi
+          if grep -q 'id="joinObserver"' index.html; then exit 1; fi
+          if grep -q 'id="hostObserverPin"' index.html; then exit 1; fi
+          if grep -q 'Observer PIN' index.html; then exit 1; fi
+          if grep -q 'async function joinObserver' index.html; then exit 1; fi
       - name: Commit changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Show live public room availability"
+          git commit -m "Remove guest observer PIN access"
           git push
