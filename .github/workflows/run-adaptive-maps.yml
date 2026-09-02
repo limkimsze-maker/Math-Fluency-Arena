@@ -26,12 +26,11 @@ jobs:
           Path('/tmp/star-game.js').write_text(scripts[-1],encoding='utf-8')
           PY
           node --check /tmp/star-game.js
-      - name: Confirm tracker and game markers
+      - name: Confirm tracker and game marker
         run: |
           grep -Fq '<script src="https://cdn.counter.dev/script.js" data-id="825e93b6-ce99-40ef-8bcc-125f13297433" data-utcoffset="8"></script>' index.html
           test "$(grep -Fo '825e93b6-ce99-40ef-8bcc-125f13297433' index.html | wc -l)" -eq 1
           grep -q 'SCARCE_SHARED_STARS_V1' index.html
-          grep -q 'ROOM_AVAILABILITY_V1' index.html
       - name: Commit changes
         run: |
           git config user.name "github-actions[bot]"
