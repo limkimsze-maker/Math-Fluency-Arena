@@ -172,7 +172,8 @@ function mapW(){return mapProfiles[mapKey].w}function mapH(){return mapProfiles[
 function mapStyle(a){return"left:"+a[0]+"%;top:"+a[1]+"%;width:"+a[2]+"%;height:"+a[3]+"%"}
 function themeDecorHTML(theme){
   if(theme==="singapore")return '<div class="themeDecor faint" style="left:50%;top:14%">🏙️</div><div class="themeDecor big" style="left:16%;top:20%">🌴</div><div class="themeDecor" style="left:84%;top:24%">🌴</div><div class="themeDecor big" style="left:50%;top:84%">🌉</div><div class="themeDecor" style="left:28%;top:84%">🌺</div><div class="themeDecor" style="left:72%;top:78%">🌺</div>';
-  if(theme==="china")return '<div class="themeDecor faint" style="left:50%;top:14%">🏯</div><div class="themeDecor big" style="left:15%;top:22%">🎋</div><div class="themeDecor big" style="left:85%;top:78%">🎋</div><div class="themeDecor" style="left:50%;top:82%">🏮</div><div class="themeDecor" style="left:28%;top:18%">🪨</div><div class="themeDecor" style="left:72%;top:20%">🏮</div>';
+  // CHINA_CNY_EMOJI_V1 — lightweight browser-native decorations only
+  if(theme==="china")return '<div class="themeDecor big" style="left:14%;top:18%">🧧</div><div class="themeDecor" style="left:31%;top:82%">🍊</div><div class="themeDecor big" style="left:49%;top:13%">🎆</div><div class="themeDecor" style="left:67%;top:82%">🏮</div><div class="themeDecor big" style="left:86%;top:22%">🐉</div><div class="themeDecor" style="left:18%;top:72%">🎋</div><div class="themeDecor" style="left:82%;top:68%">🎇</div><div class="themeDecor" style="left:38%;top:18%">🌸</div><div class="themeDecor" style="left:59%;top:76%">🪙</div><div class="themeDecor" style="left:74%;top:16%">✨</div>';
   return '<div class="jpDecor fuji" style="left:50%;top:9%">🗻</div><div class="jpDecor shrine" style="left:50%;top:20%">🏯</div><div class="jpDecor torii" style="left:10%;top:48%">⛩️</div><div class="jpDecor torii" style="left:90%;top:48%">⛩️</div><div class="jpDecor lantern" style="left:19%;top:39%">🏮</div><div class="jpDecor lantern" style="left:81%;top:61%">🏮</div><div class="jpDecor sakura" style="left:28%;top:16%">🌸</div><div class="jpDecor sakura" style="left:72%;top:84%">🌸</div>';
 }
 function renderMap(key){
@@ -181,7 +182,7 @@ function renderMap(key){
 function setMap(key){
   mapKey=mapProfiles[key]?key:"compact";const p=mapProfiles[mapKey];mapTheme=p.theme||"sakura";renderMap(mapKey);if(hostMapLabel)hostMapLabel.textContent=p.name;if(mapLabel)mapLabel.textContent=p.name+" map";renderMapChooser()
 }
-function miniDecor(theme){if(theme==="singapore")return [[50,16,"🏙️"],[18,22,"🌴"],[82,75,"🌴"],[50,82,"🌉"]];if(theme==="china")return [[50,16,"🏯"],[18,23,"🎋"],[82,76,"🎋"],[50,82,"🏮"]];return [[50,14,"🗻"],[15,48,"⛩️"],[85,48,"⛩️"],[50,82,"🌸"]]}
+function miniDecor(theme){if(theme==="singapore")return [[50,16,"🏙️"],[18,22,"🌴"],[82,75,"🌴"],[50,82,"🌉"]];if(theme==="china")return [[14,20,"🧧"],[32,78,"🍊"],[50,16,"🎆"],[68,78,"🏮"],[86,22,"🐉"]];return [[50,14,"🗻"],[15,48,"⛩️"],[85,48,"⛩️"],[50,82,"🌸"]]}
 function renderMiniMap(el,p){
   if(!el||!p)return;el.className="mapThumbWorld theme-"+(p.theme||"sakura");let html='<div class="miniBase blue"></div><div class="miniBase red"></div>';p.paths.forEach(a=>html+='<div class="miniPath" style="left:'+a[0]+'%;top:'+a[1]+'%;width:'+a[2]+'%;height:'+a[3]+'%"></div>');p.walls.forEach(a=>html+='<div class="miniWall" style="left:'+a[0]+'%;top:'+a[1]+'%;width:'+a[2]+'%;height:'+a[3]+'%"></div>');p.bushes.slice(0,7).forEach(a=>html+='<div class="miniBush" style="left:'+a[0]+'%;top:'+a[1]+'%"></div>');miniDecor(p.theme||"sakura").forEach(d=>html+='<div class="miniDecor" style="left:'+d[0]+'%;top:'+d[1]+'%">'+d[2]+'</div>');el.innerHTML=html
 }
