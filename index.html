@@ -653,13 +653,23 @@ function makeKilometresMetresQ(){
   const kilometres=Math.floor(totalMetres/1000),metres=totalMetres%1000,correct=totalMetres+" m";
   return{text:"Convert "+kilometres+" km "+metres+" m to metres.",correct,options:makeLabelledNumberOptions(totalMetres,1000,10000,"m",[1000,-1000,100,-100,10,-10])}
 }
+function formatKgG(totalGrams){
+  return Math.floor(totalGrams/1000)+" kg "+totalGrams%1000+" g"
+}
+function makeKgGOptions(correctGrams){
+  const values=new Set([correctGrams]),offsets=[1000,-1000,100,-100,10,-10,1,-1];
+  for(const d of offsets){const v=correctGrams+d;if(v>=1000&&v<=10000)values.add(v);if(values.size>=4)break}
+  while(values.size<4)values.add(rand(1000,10000));
+  return[...values].slice(0,4).map(formatKgG).sort(()=>Math.random()-.5)
+}
 function makeKilogramsGramsQ(){
+  const exact=Math.random()<.2,totalGrams=exact?rand(1,10)*1000:rand(1001,9999);
   if(Math.random()<.5){
-    const kilograms=rand(1,10),correct=kilograms*1000+" g";
-    return{text:"Convert "+kilograms+" kg to grams.",correct,options:makeLabelledNumberOptions(kilograms*1000,1000,10000,"g",[1000,-1000,2000,-2000,100,-100])}
+    const correct=formatKgG(totalGrams);
+    return{text:"Convert "+totalGrams+" g to kilograms and grams.",correct,options:makeKgGOptions(totalGrams)}
   }
-  const grams=rand(1,10)*1000,correct=grams/1000+" kg";
-  return{text:"Convert "+grams+" g to kilograms.",correct,options:makeLabelledNumberOptions(grams/1000,1,10,"kg",[1,-1,2,-2,3,-3])}
+  const kilograms=Math.floor(totalGrams/1000),grams=totalGrams%1000,correct=totalGrams+" g";
+  return{text:"Convert "+kilograms+" kg "+grams+" g to grams.",correct,options:makeLabelledNumberOptions(totalGrams,1000,10000,"g",[1000,-1000,100,-100,10,-10])}
 }
 function drawFractionVisual(canvas,visual){
   const v=normaliseFractionVisual(visual);if(!canvas||!v)return;
