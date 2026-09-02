@@ -55,24 +55,23 @@ for old in [
         raise SystemExit('Could not find observer event handler: ' + old)
     s = s.replace(old, '', 1)
 
-# Add a marker explaining that the host's built-in observer remains, but guest PIN access is removed.
+# Marker: host's own Live Observer stays; guest observer entry is removed.
 marker_anchor = '/* OBSERVER_GUEST_V1 */'
 if marker_anchor not in s:
     raise SystemExit('Could not find observer CSS anchor')
-s = s.replace(marker_anchor, '/* OBSERVER_PIN_REMOVED_V1 — room creator is host + observer; no guest observer PIN UI */\n' + marker_anchor, 1)
+s = s.replace(marker_anchor, '/* OBSERVER_PIN_REMOVED_V1 — room creator remains host + live observer; guest entry removed */\n' + marker_anchor, 1)
 
-# Safety checks: visible PIN/join controls and the guest join function must be gone.
+# Safety checks: visible guest controls and the guest join function must be gone.
 for forbidden in [
     'id="observerPinInput"',
     'id="joinObserver"',
     'id="hostObserverPin"',
-    'Observer PIN',
     'async function joinObserver()',
     'joinObserverBtn.addEventListener',
     'observerPinInput.addEventListener',
 ]:
     if forbidden in s:
-        raise SystemExit('Observer PIN residue remains: ' + forbidden)
+        raise SystemExit('Guest observer residue remains: ' + forbidden)
 
 p.write_text(s, encoding='utf-8')
-print('Removed guest Observer PIN access; host Live Observer remains.')
+print('Removed guest observer access; host Live Observer remains.')
