@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Remove guest observer PIN access
+      - name: Remove guest observer access
         run: python .github/scripts/remove_observer_pin.py
       - name: Validate JavaScript
         run: |
@@ -26,7 +26,7 @@ jobs:
           Path('/tmp/star-game.js').write_text(m.group(1),encoding='utf-8')
           PY
           node --check /tmp/star-game.js
-      - name: Confirm observer PIN removal
+      - name: Confirm observer access removal
         run: |
           grep -q 'OBSERVER_PIN_REMOVED_V1' index.html
           grep -q 'id="observerSelect"' index.html
@@ -34,12 +34,12 @@ jobs:
           if grep -q 'id="observerPinInput"' index.html; then exit 1; fi
           if grep -q 'id="joinObserver"' index.html; then exit 1; fi
           if grep -q 'id="hostObserverPin"' index.html; then exit 1; fi
-          if grep -q 'Observer PIN' index.html; then exit 1; fi
           if grep -q 'async function joinObserver' index.html; then exit 1; fi
+          if grep -q 'joinObserverBtn.addEventListener' index.html; then exit 1; fi
       - name: Commit changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Remove guest observer PIN access"
+          git commit -m "Remove guest observer access"
           git push
