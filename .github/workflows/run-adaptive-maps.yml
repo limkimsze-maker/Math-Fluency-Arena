@@ -1,4 +1,4 @@
-name: Add team-colour bank glow
+name: Add golden bank glow
 
 on:
   push:
@@ -13,8 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Add blue red ninja bank glow
-        run: python .github/scripts/bank_ninja_glow.py
+      - name: Change ninja bank glow to gold
+        run: python .github/scripts/bank_ninja_gold_glow.py
       - name: Validate JavaScript
         run: |
           python3 - <<'PY'
@@ -26,17 +26,18 @@ jobs:
           Path('/tmp/star-game.js').write_text(m.group(1),encoding='utf-8')
           PY
           node --check /tmp/star-game.js
-      - name: Confirm bank ninja glow
+      - name: Confirm golden bank glow
         run: |
-          grep -q 'BANK_NINJA_GLOW_V1' index.html
-          grep -q 'bankBlueGlow' index.html
-          grep -q 'bankRedGlow' index.html
+          grep -q 'BANK_NINJA_GLOW_V2' index.html
+          grep -q 'bankGoldGlow' index.html
           grep -q 'bankNinjaGlow(playerId)' index.html
           grep -q 'bankNinjaGlow(bot.id)' index.html
+          if grep -q 'bankBlueGlow' index.html; then exit 1; fi
+          if grep -q 'bankRedGlow' index.html; then exit 1; fi
       - name: Commit changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Make banking ninja glow in team colour"
+          git commit -m "Change banking ninja glow to gold"
           git push
