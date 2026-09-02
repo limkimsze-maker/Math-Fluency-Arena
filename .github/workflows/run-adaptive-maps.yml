@@ -1,4 +1,4 @@
-name: Remove observer PIN access
+name: Add live observer questions
 
 on:
   push:
@@ -13,8 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Remove guest observer access
-        run: python .github/scripts/remove_observer_pin.py
+      - name: Add live selected-player question display
+        run: python .github/scripts/observer_live_question.py
       - name: Validate JavaScript
         run: |
           python3 - <<'PY'
@@ -26,20 +26,20 @@ jobs:
           Path('/tmp/star-game.js').write_text(m.group(1),encoding='utf-8')
           PY
           node --check /tmp/star-game.js
-      - name: Confirm observer access removal
+      - name: Confirm live observer questions
         run: |
-          grep -q 'OBSERVER_PIN_REMOVED_V1' index.html
-          grep -q 'id="observerSelect"' index.html
-          grep -q '👁️ Live Observer' index.html
-          if grep -q 'id="observerPinInput"' index.html; then exit 1; fi
-          if grep -q 'id="joinObserver"' index.html; then exit 1; fi
-          if grep -q 'id="hostObserverPin"' index.html; then exit 1; fi
-          if grep -q 'async function joinObserver' index.html; then exit 1; fi
-          if grep -q 'joinObserverBtn.addEventListener' index.html; then exit 1; fi
+          grep -q 'OBSERVER_LIVE_QUESTION_V1' index.html
+          grep -q 'id="observerQuestion"' index.html
+          grep -q 'type:"questionState"' index.html
+          grep -q 'renderObserverQuestion' index.html
+          grep -q '🧮 ' index.html
+          grep -q 'Correct:' index.html
+          grep -q 'Incorrect:' index.html
+          if grep -q 'correct:liveQuestion' index.html; then exit 1; fi
       - name: Commit changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Remove guest observer access"
+          git commit -m "Show selected player live question to host"
           git push
