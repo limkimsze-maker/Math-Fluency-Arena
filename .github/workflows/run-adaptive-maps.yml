@@ -1,4 +1,4 @@
-name: Add shared central practice stars
+name: Add scarce shared stars
 
 on:
   push:
@@ -13,8 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Add shared central practice stars
-        run: python .github/scripts/shared_star_practice.py
+      - name: Make shared stars scarce
+        run: python .github/scripts/scarce_shared_stars.py
       - name: Validate JavaScript
         run: |
           python3 - <<'PY'
@@ -26,20 +26,21 @@ jobs:
           Path('/tmp/star-game.js').write_text(m.group(1),encoding='utf-8')
           PY
           node --check /tmp/star-game.js
-      - name: Confirm shared star practice
+      - name: Confirm scarce shared stars
         run: |
-          grep -q 'SHARED_STAR_PRACTICE_V1' index.html
-          grep -q 'function sharedStarCountForPlayers' index.html
-          grep -q 'n<=8?6:n<=16?8:n<=24?10:12' index.html
-          grep -q 'function makeSharedStars' index.html
-          grep -q 'function renderSharedStars' index.html
-          grep -q 'sharedStars=makeSharedStars(sharedStarCountForPlayers(n))' index.html
-          grep -q 'Math.hypot(x-s.x,y-s.y)<72' index.html
-          grep -q 'Shared stars stay available so everyone gets practice.' index.html
+          grep -q 'SCARCE_SHARED_STARS_V1' index.html
+          grep -q 'n<=8?2:n<=16?3:n<=24?4:5' index.html
+          grep -q 'function makeReplacementSharedStar' index.html
+          grep -q 'type:"starClaim"' index.html
+          grep -q 'type:"starAwarded"' index.html
+          grep -q 'function handleStarClaim' index.html
+          grep -q 'function applyStarAward' index.html
+          grep -q 'Math.hypot(x-s.x,y-s.y)<64' index.html
+          grep -q 'A claimed star disappears for everyone' index.html
       - name: Commit changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Use shared central stars for easier practice"
+          git commit -m "Make shared stars scarce and first-claim wins"
           git push
