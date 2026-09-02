@@ -583,8 +583,9 @@ function makeLikeFractionOptions(num,den){
   let guard=0;while(out.length<4&&guard++<120){const d=rand(2,12),n=rand(1,d-1);add(n,d)}
   return out.slice(0,4).sort(()=>Math.random()-.5)
 }
+let addLikeFractionNext=true;
 function makeLikeFractionQ(){
-  const addition=Math.random()<.5;
+  const addition=addLikeFractionNext;addLikeFractionNext=!addLikeFractionNext;
   let den,a,b,c,guard=0;
   do{
     den=rand(3,12);
@@ -609,8 +610,9 @@ function makeSimplestChoiceOptions(sourceN,sourceD,simpleN,simpleD){
   let guard=0;while(out.length<4&&guard++<160){const d=rand(2,12),n=rand(1,d-1);add(n,d)}
   return out.slice(0,4).sort(()=>Math.random()-.5)
 }
+let simplestFormNext=false;
 function makeEquivalentFractionQ(){
-  const simplify=Math.random()<.5;
+  const simplify=simplestFormNext;simplestFormNext=!simplestFormNext;
   const candidates=[];
   for(let d=2;d<=6;d++)for(let n=1;n<d;n++)if(fractionGcd(n,d)===1)for(let factor=2;factor<=4;factor++)if(d*factor<=12)candidates.push({n,d,factor});
   const c=candidates[rand(0,candidates.length-1)],sourceN=c.n*c.factor,sourceD=c.d*c.factor;
@@ -636,17 +638,21 @@ function makeKmMOptions(correctMetres){
   while(values.size<4)values.add(rand(1000,10000));
   return[...values].slice(0,4).map(formatKmM).sort(()=>Math.random()-.5)
 }
+let metresToCentimetresNext=true;
 function makeMetresCentimetresQ(){
-  if(Math.random()<.5){
+  const convertToCentimetres=metresToCentimetresNext;metresToCentimetresNext=!metresToCentimetresNext;
+  if(convertToCentimetres){
     const metres=rand(1,10),correct=metres*100+" cm";
     return{text:"Convert "+metres+" m to centimetres.",correct,options:makeLabelledNumberOptions(metres*100,100,1000,"cm",[100,-100,200,-200,10,-10])}
   }
   const centimetres=rand(1,10)*100,correct=centimetres/100+" m";
   return{text:"Convert "+centimetres+" cm to metres.",correct,options:makeLabelledNumberOptions(centimetres/100,1,10,"m",[1,-1,2,-2,3,-3])}
 }
+let metresToMixedDistanceNext=true;
 function makeKilometresMetresQ(){
   const exact=Math.random()<.2,totalMetres=exact?rand(1,10)*1000:rand(1001,9999);
-  if(Math.random()<.5){
+  const convertToMixed=metresToMixedDistanceNext;metresToMixedDistanceNext=!metresToMixedDistanceNext;
+  if(convertToMixed){
     const correct=formatKmM(totalMetres);
     return{text:"Convert "+totalMetres+" m to kilometres and metres.",correct,options:makeKmMOptions(totalMetres)}
   }
