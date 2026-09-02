@@ -127,14 +127,14 @@ button,input,select{max-width:100%}button,#controls{-webkit-user-select:none;use
 
 
 <section id="botSetup" class="screen"><div class="card"><h1>🤖 3v3 Bot Challenge</h1><p class="small">You + 2 Blue Bots vs 3 Red Bots. Choose what to practise and which arena to play before the round starts.</p>
-<div class="botSetupGrid"><div><label for="botMathModeSelect">What do you want to learn?</label><select id="botMathModeSelect" class="modeSelect"><option value="add20">Addition within 20</option><option value="sub20">Subtraction within 20</option><option value="mul5">Multiplication: ×2 to ×5 tables</option><option value="div5">Division: ÷2 to ÷5 tables</option><option value="mul610">Multiplication: ×6 to ×10 tables</option><option value="div610">Division: ÷6 to ÷10 tables</option><option value="mul10">Multiplication: ×2 to ×10 tables</option><option value="div10">Division: ÷2 to ÷10 tables</option><option value="mul12">Multiplication: ×2 to ×12 tables</option><option value="div12">Division: ÷2 to ÷12 tables</option><option value="fraction">Identify Fractions</option><option value="likefrac">Adding &amp; Subtracting Like Fractions</option><option value="mixed">Mixed: + − × ÷</option></select></div><div><label for="botMapSizeSelect">Map size</label><select id="botMapSizeSelect" class="modeSelect"><option value="compact">Compact · recommended for 3v3</option><option value="standard">Standard</option><option value="large">Large</option><option value="mega">Mega</option></select></div></div>
+<div class="botSetupGrid"><div><label for="botMathModeSelect">What do you want to learn?</label><select id="botMathModeSelect" class="modeSelect"><option value="add20">Addition within 20</option><option value="sub20">Subtraction within 20</option><option value="mul5">Multiplication: ×2 to ×5 tables</option><option value="div5">Division: ÷2 to ÷5 tables</option><option value="mul610">Multiplication: ×6 to ×10 tables</option><option value="div610">Division: ÷6 to ÷10 tables</option><option value="mul10">Multiplication: ×2 to ×10 tables</option><option value="div10">Division: ÷2 to ÷10 tables</option><option value="mul12">Multiplication: ×2 to ×12 tables</option><option value="div12">Division: ÷2 to ÷12 tables</option><option value="fraction">Identify Shaded Fractions</option><option value="likefrac">Add &amp; Subtract Like Fractions</option><option value="equivfrac">Equivalent Fractions &amp; Simplest Form</option><option value="mixed">Mixed: + − × ÷</option></select></div><div><label for="botMapSizeSelect">Map size</label><select id="botMapSizeSelect" class="modeSelect"><option value="compact">Compact · recommended for 3v3</option><option value="standard">Standard</option><option value="large">Large</option><option value="mega">Mega</option></select></div></div>
 <div class="mapChooserWrap botMapChoices"><div class="mapChooserHead"><b>Choose map design</b><span class="mapSizeHint" id="botMapSizeHint">Compact · recommended for 3v3</span></div><div class="mapChoices" id="botMapChoices">
 <button type="button" class="mapChoice selected" data-bot-map-theme="sakura"><div class="mapThumb"><div class="mapThumbWorld"></div></div><span>Sakura Garden</span></button>
 <button type="button" class="mapChoice" data-bot-map-theme="singapore"><div class="mapThumb"><div class="mapThumbWorld"></div></div><span>Singapore Garden City</span></button>
 <button type="button" class="mapChoice" data-bot-map-theme="china"><div class="mapThumb"><div class="mapThumbWorld"></div></div><span>Chinese Lantern Garden</span></button>
 </div><div class="botMapNote small">The preview changes with map size. Every design has different paths and obstacles. No flags, official emblems, logos or copied characters are used.</div></div>
 <div class="botActions"><button id="botStart" class="btn primary" type="button">Start 3v3 Bot Challenge</button><button id="botBack" class="btn" type="button">Back to Home</button></div></div></section>
-<section id="hostLobby" class="screen"><div class="card"><h1>Class Lobby</h1><p class="small">Share this room code with your pupils.</p><div id="hostRoomCode" class="room"></div><div class="hostGrid"><div class="hostStat">Players<strong id="playerCount">0</strong></div><div class="hostStat">Teams<strong><span id="blueCount">0</span> 🔵 · 🔴 <span id="redCount">0</span></strong></div></div><h2>Math Fluency</h2><select id="mathModeSelect" class="modeSelect"><option value="add20">Addition within 20</option><option value="sub20">Subtraction within 20</option><option value="mul5">Multiplication: ×2 to ×5 tables</option><option value="div5">Division: ÷2 to ÷5 tables</option><option value="mul610">Multiplication: ×6 to ×10 tables</option><option value="div610">Division: ÷6 to ÷10 tables</option><option value="mul10">Multiplication: ×2 to ×10 tables</option><option value="div10">Division: ÷2 to ÷10 tables</option><option value="mul12">Multiplication: ×2 to ×12 tables</option><option value="div12">Division: ÷2 to ÷12 tables</option><option value="fraction">Identify Fractions</option><option value="likefrac">Adding &amp; Subtracting Like Fractions</option><option value="mixed">Mixed: + − × ÷</option></select><div class="small">Map: <b id="hostMapPreview">Compact · 0 players</b> (automatic)</div><h2>Who's in?</h2><div id="roster" class="roster"><div class="small">Waiting for pupils to join…</div></div>
+<section id="hostLobby" class="screen"><div class="card"><h1>Class Lobby</h1><p class="small">Share this room code with your pupils.</p><div id="hostRoomCode" class="room"></div><div class="hostGrid"><div class="hostStat">Players<strong id="playerCount">0</strong></div><div class="hostStat">Teams<strong><span id="blueCount">0</span> 🔵 · 🔴 <span id="redCount">0</span></strong></div></div><h2>Math Fluency</h2><select id="mathModeSelect" class="modeSelect"><option value="add20">Addition within 20</option><option value="sub20">Subtraction within 20</option><option value="mul5">Multiplication: ×2 to ×5 tables</option><option value="div5">Division: ÷2 to ÷5 tables</option><option value="mul610">Multiplication: ×6 to ×10 tables</option><option value="div610">Division: ÷6 to ÷10 tables</option><option value="mul10">Multiplication: ×2 to ×10 tables</option><option value="div10">Division: ÷2 to ÷10 tables</option><option value="mul12">Multiplication: ×2 to ×12 tables</option><option value="div12">Division: ÷2 to ÷12 tables</option><option value="fraction">Identify Shaded Fractions</option><option value="likefrac">Add &amp; Subtract Like Fractions</option><option value="equivfrac">Equivalent Fractions &amp; Simplest Form</option><option value="mixed">Mixed: + − × ÷</option></select><div class="small">Map: <b id="hostMapPreview">Compact · 0 players</b> (automatic)</div><h2>Who's in?</h2><div id="roster" class="roster"><div class="small">Waiting for pupils to join…</div></div>
 <div class="mapChooserWrap" id="mapChooserWrap">
   <div class="mapChooserHead"><b>Choose map design</b><span class="mapSizeHint" id="mapSizeHint">Compact · recommended for this class size</span></div>
   <div class="mapChoices" id="mapChoices">
@@ -550,7 +550,7 @@ function applyStarAward(d){
   if(d.targetId===playerId&&!isHost&&!isObserver){pendingStarClaimId="";if(roundActive&&Date.now()>=roundStart&&!qOpen&&carried<LIMIT)openQuestion()}
   else if(pendingStarClaimId&&!sharedStars.some(s=>s.id===pendingStarClaimId))pendingStarClaimId=""
 }
-const modeNames={add20:"Addition within 20",sub20:"Subtraction within 20",mul5:"Multiplication: ×2 to ×5 tables",div5:"Division: ÷2 to ÷5 tables",mul610:"Multiplication: ×6 to ×10 tables",div610:"Division: ÷6 to ÷10 tables",mul10:"Multiplication: ×2 to ×10 tables",div10:"Division: ÷2 to ÷10 tables",mul12:"Multiplication: ×2 to ×12 tables",div12:"Division: ÷2 to ÷12 tables",fraction:"Identify Fractions",likefrac:"Adding & Subtracting Like Fractions",mixed:"Mixed: + − × ÷"};
+const modeNames={add20:"Addition within 20",sub20:"Subtraction within 20",mul5:"Multiplication: ×2 to ×5 tables",div5:"Division: ÷2 to ÷5 tables",mul610:"Multiplication: ×6 to ×10 tables",div610:"Division: ÷6 to ÷10 tables",mul10:"Multiplication: ×2 to ×10 tables",div10:"Division: ÷2 to ÷10 tables",mul12:"Multiplication: ×2 to ×12 tables",div12:"Division: ÷2 to ÷12 tables",fraction:"Identify Shaded Fractions",likefrac:"Add & Subtract Like Fractions",equivfrac:"Equivalent Fractions & Simplest Form",mixed:"Mixed: + − × ÷"};
 function setMathMode(mode){mathMode=modeNames[mode]?mode:"add20";if(mathModeSelect)mathModeSelect.value=mathMode;if(hostModeLabel)hostModeLabel.textContent=modeNames[mathMode];if(modeLabel)modeLabel.textContent=modeNames[mathMode];if(teamAssigned&&!roundActive&&!isHost)waitText.textContent="Waiting for your teacher to start. Math: "+modeNames[mathMode]}
 function rand(min,max){return min+Math.floor(Math.random()*(max-min+1))}
 function makeOptions(correct,minValue,maxValue){const o=new Set([correct]),offsets=[1,-1,2,-2,3,-3,5,-5,10,-10];for(const d of offsets){const v=correct+d;if(v>=minValue&&v<=maxValue)o.add(v);if(o.size>=4)break}while(o.size<4)o.add(rand(minValue,maxValue));return[...o].sort(()=>Math.random()-.5)}
@@ -589,6 +589,34 @@ function makeLikeFractionQ(){
   }while(fractionGcd(c,den)!==1&&guard++<80);
   return{text:a+"/"+den+(addition?" + ":" − ")+b+"/"+den,correct:c+"/"+den,options:makeLikeFractionOptions(c,den)}
 }
+// EQUIVALENT_FRACTIONS_V1 — identify equivalent fractions + simplify to simplest form
+function simplestFractionPair(n,d){const g=fractionGcd(n,d);return{n:n/g,d:d/g}}
+function makeEquivalentChoiceOptions(baseN,baseD,correctN,correctD){
+  const correct=correctN+"/"+correctD,out=[correct],seen=new Set([correct]);
+  const add=(n,d)=>{if(d<2||d>12||n<1||n>=d)return;const k=n+"/"+d;if(seen.has(k))return;if(n*baseD===baseN*d)return;seen.add(k);out.push(k)};
+  add(correctN-1,correctD);add(correctN+1,correctD);add(correctN,correctD-1);add(correctN,correctD+1);add(baseN,Math.min(12,baseD+1));
+  let guard=0;while(out.length<4&&guard++<160){const d=rand(2,12),n=rand(1,d-1);add(n,d)}
+  return out.slice(0,4).sort(()=>Math.random()-.5)
+}
+function makeSimplestChoiceOptions(sourceN,sourceD,simpleN,simpleD){
+  const correct=simpleN+"/"+simpleD,out=[correct],seen=new Set([correct]);
+  const add=(n,d)=>{if(d<2||d>12||n<1||n>=d)return;const k=n+"/"+d;if(!seen.has(k)){seen.add(k);out.push(k)}};
+  add(sourceN,sourceD);add(simpleN-1,simpleD);add(simpleN+1,simpleD);add(simpleN,simpleD-1);add(simpleN,simpleD+1);
+  let guard=0;while(out.length<4&&guard++<160){const d=rand(2,12),n=rand(1,d-1);add(n,d)}
+  return out.slice(0,4).sort(()=>Math.random()-.5)
+}
+function makeEquivalentFractionQ(){
+  const simplify=Math.random()<.5;
+  const candidates=[];
+  for(let d=2;d<=6;d++)for(let n=1;n<d;n++)if(fractionGcd(n,d)===1)for(let factor=2;factor<=4;factor++)if(d*factor<=12)candidates.push({n,d,factor});
+  const c=candidates[rand(0,candidates.length-1)],sourceN=c.n*c.factor,sourceD=c.d*c.factor;
+  if(simplify){
+    const simple=simplestFractionPair(sourceN,sourceD),correct=simple.n+"/"+simple.d;
+    return{text:"Write "+sourceN+"/"+sourceD+" in its simplest form.",correct,options:makeSimplestChoiceOptions(sourceN,sourceD,simple.n,simple.d)}
+  }
+  const correct=sourceN+"/"+sourceD;
+  return{text:"Which fraction is equivalent to "+c.n+"/"+c.d+"?",correct,options:makeEquivalentChoiceOptions(c.n,c.d,sourceN,sourceD)}
+}
 function drawFractionVisual(canvas,visual){
   const v=normaliseFractionVisual(visual);if(!canvas||!v)return;
   const ctx=canvas.getContext("2d"),w=canvas.width,h=canvas.height;ctx.clearRect(0,0,w,h);ctx.save();ctx.lineWidth=3;ctx.strokeStyle="#172033";ctx.fillStyle="#ffd84a";
@@ -601,7 +629,7 @@ function drawFractionVisual(canvas,visual){
   }
   ctx.restore();canvas.style.display="block"
 }
-function makeQ(){let mode=mathMode;if(mode==="fraction")return makeFractionQ();if(mode==="likefrac")return makeLikeFractionQ();if(mode==="mixed")mode=["add20","sub20","mul12","div12"][rand(0,3)];let a,b,c,text,min=0,max=20;if(mode==="add20"){a=rand(0,20);b=rand(0,20-a);c=a+b;text=a+" + "+b}else if(mode==="sub20"){a=rand(0,20);b=rand(0,a);c=a-b;text=a+" − "+b}else if(mode==="mul5"||mode==="mul610"||mode==="mul10"||mode==="mul12"){const low=mode==="mul610"?6:2,top=mode==="mul5"?5:mode==="mul610"?10:mode==="mul10"?10:12;a=rand(low,top);b=rand(1,12);c=a*b;text=a+" × "+b;min=1;max=top*12}else{const low=mode==="div610"?6:2,top=mode==="div5"?5:mode==="div610"?10:mode==="div10"?10:12;a=rand(low,top);c=rand(1,12);b=a*c;text=b+" ÷ "+a;min=1;max=12}return{text,correct:c,options:makeOptions(c,min,max)}}
+function makeQ(){let mode=mathMode;if(mode==="fraction")return makeFractionQ();if(mode==="likefrac")return makeLikeFractionQ();if(mode==="equivfrac")return makeEquivalentFractionQ();if(mode==="mixed")mode=["add20","sub20","mul12","div12"][rand(0,3)];let a,b,c,text,min=0,max=20;if(mode==="add20"){a=rand(0,20);b=rand(0,20-a);c=a+b;text=a+" + "+b}else if(mode==="sub20"){a=rand(0,20);b=rand(0,a);c=a-b;text=a+" − "+b}else if(mode==="mul5"||mode==="mul610"||mode==="mul10"||mode==="mul12"){const low=mode==="mul610"?6:2,top=mode==="mul5"?5:mode==="mul610"?10:mode==="mul10"?10:12;a=rand(low,top);b=rand(1,12);c=a*b;text=a+" × "+b;min=1;max=top*12}else{const low=mode==="div610"?6:2,top=mode==="div5"?5:mode==="div610"?10:mode==="div10"?10:12;a=rand(low,top);c=rand(1,12);b=a*c;text=b+" ÷ "+a;min=1;max=12}return{text,correct:c,options:makeOptions(c,min,max)}}
 function sendQuestionState(open){
   if(demoMode||!teamAssigned)return;
   if(open&&liveQuestion)send({type:"questionState",id:playerId,open:true,mode:liveQuestion.mode,text:liveQuestion.text,options:liveQuestion.options,selected:liveQuestion.selected,result:liveQuestion.result,targetName:liveQuestion.targetName,visual:liveQuestion.visual||null,ts:Date.now()});
