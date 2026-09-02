@@ -1,4 +1,4 @@
-name: Fix banking animation rendering
+name: Tone down banking visuals
 
 on:
   push:
@@ -13,8 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Correct banking animation CSS
-        run: python .github/scripts/banking_visual_fix_v3.py
+      - name: Tone down banking pulse and burst
+        run: python .github/scripts/banking_visual_tone_down.py
       - name: Validate JavaScript
         run: |
           python3 - <<'PY'
@@ -26,25 +26,19 @@ jobs:
           Path('/tmp/star-game.js').write_text(m.group(1),encoding='utf-8')
           PY
           node --check /tmp/star-game.js
-      - name: Confirm corrected banking animations
+      - name: Confirm gentle banking visuals
         run: |
-          grep -q 'BANKING_VISUAL_FIX_V3' index.html
-          grep -q '@keyframes bankPulseStrong' index.html
-          grep -q '@keyframes bankBurstStrong' index.html
+          grep -q 'BANKING_VISUAL_V4' index.html
+          grep -q 'bankPulseGentle' index.html
+          grep -q 'bankBurstGentle' index.html
+          grep -q '🏦 BANK HERE' index.html
           grep -q '✅ BANKED!' index.html
-          grep -q 'bankBase.classList.remove("bankBurst"),1100' index.html
-          python3 - <<'PY'
-          from pathlib import Path
-          s=Path('index.html').read_text(encoding='utf-8')
-          pulse=s.split('@keyframes bankPulseStrong',1)[1].split('.base.bankBurst',1)[0]
-          burst=s.split('@keyframes bankBurstStrong',1)[1].split('@media(prefers-reduced-motion:reduce)',1)[0]
-          if '!important' in pulse or '!important' in burst:
-              raise SystemExit('Invalid !important found inside banking keyframes')
-          PY
+          grep -q 'bankBase.classList.remove("bankBurst"),650' index.html
+          if grep -q 'BANKING_VISUAL_FIX_V3' index.html; then exit 1; fi
       - name: Commit changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Correct banking pulse and burst animations"
+          git commit -m "Tone down banking pulse and burst"
           git push
