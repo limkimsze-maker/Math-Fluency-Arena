@@ -662,9 +662,11 @@ function makeKgGOptions(correctGrams){
   while(values.size<4)values.add(rand(1000,10000));
   return[...values].slice(0,4).map(formatKgG).sort(()=>Math.random()-.5)
 }
+let gramsToMixedNext=true;
 function makeKilogramsGramsQ(){
   const exact=Math.random()<.2,totalGrams=exact?rand(1,10)*1000:rand(1001,9999);
-  if(Math.random()<.5){
+  const convertToMixed=gramsToMixedNext;gramsToMixedNext=!gramsToMixedNext;
+  if(convertToMixed){
     const correct=formatKgG(totalGrams);
     return{text:"Convert "+totalGrams+" g to kilograms and grams.",correct,options:makeKgGOptions(totalGrams)}
   }
