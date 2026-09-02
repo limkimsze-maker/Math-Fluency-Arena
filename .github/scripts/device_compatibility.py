@@ -1,62 +1,83 @@
 from pathlib import Path
 import re
 
-p = Path('index.html')
-s = p.read_text(encoding='utf-8')
+p = Path("index.html")
+s = p.read_text(encoding="utf-8")
 
-if 'GAMEPLAY_TUNING_V2' in s:
-    raise SystemExit('Gameplay tuning is already installed')
+MARKER = "MULTI_BOT_3V3_V1"
+if MARKER in s:
+    raise SystemExit("3v3 bot demo is already installed")
 
 def replace_once(old, new, label):
     global s
     if old not in s:
-        raise SystemExit(f'{label} marker not found')
+        raise SystemExit(f"{label} marker not found")
     s = s.replace(old, new, 1)
 
 def regex_once(pattern, replacement, label):
     global s
     s2, n = re.subn(pattern, replacement, s, count=1, flags=re.S)
     if n != 1:
-        raise SystemExit(f'{label} marker not found or ambiguous: {n}')
+        raise SystemExit(f"{label} marker not found or ambiguous: {n}")
     s = s2
 
-# Bot navigation state for lightweight A* routing and stuck recovery.
-old_state = 'let room="",name="",team=null,socket=null,isHost=false,isObserver=false,observerAuthorized=false,observerPin="",pendingObserverPin="",teamAssigned=false,x=100,y=100,starX=300,starY=220,carried=0,immuneUntil=0,blue=0,red=0,streak=0,bestStreak=0,boostStarStreak=0,boostReady=false,boostUntil=0,qOpen=false,qLock=false,questionMode="star",stealTargetId=null,stealTargetName="",mathMode="add20",mapKey="compact",roundStart=0,roundEnd=0,roundActive=false,finished=false,lastFrame=performance.now(),lastSend=0,lastHeartbeat=0,lastBank=0,moved=false,toastTimer,hostTicker=null,facing="right",observerTarget="overview",demoMode=false,demoBot=null,botSolveAt=0,botLastTag=0,hostHadPlayers=false,safeToClose=false;'
-new_state = 'let room="",name="",team=null,socket=null,isHost=false,isObserver=false,observerAuthorized=false,observerPin="",pendingObserverPin="",teamAssigned=false,x=100,y=100,starX=300,starY=220,carried=0,immuneUntil=0,blue=0,red=0,streak=0,bestStreak=0,boostStarStreak=0,boostReady=false,boostUntil=0,qOpen=false,qLock=false,questionMode="star",stealTargetId=null,stealTargetName="",mathMode="add20",mapKey="compact",roundStart=0,roundEnd=0,roundActive=false,finished=false,lastFrame=performance.now(),lastSend=0,lastHeartbeat=0,lastBank=0,moved=false,toastTimer,hostTicker=null,facing="right",observerTarget="overview",demoMode=false,demoBot=null,botSolveAt=0,botLastTag=0,botPath=[],botPathIndex=0,botPathAt=0,botTargetKey="",botStuckAt=0,botLastX=0,botLastY=0,hostHadPlayers=false,safeToClose=false;'
-replace_once(old_state, new_state, 'state')
+replace_once(
+    'demoMode=false,demoBot=null,botSolveAt=0,botLastTag=0,',
+    'demoMode=false,demoBot=null,demoBots=[],botSolveAt=0,botLastTag=0,',
+    'demo bot state'
+)
 
-# Keep the bot's own stars nearby too, so the demo has a higher Math-question density.
-new_bot_star = '''// GAMEPLAY_TUNING_V2
-function botPlaceStar(){
-  if(!demoBot)return;
+multi_bot_block = r'''function clearDemoActors(){world.querySelectorAll(".player").forEach(el=>el.remove())}
+// MULTI_BOT_3V3_V1
+function botPlaceStar(bot){
+  if(!bot)return;
   const minTravel=165,maxTravel=420;
   let sx=mapW()*.5,sy=mapH()*.5,found=false;
   for(let i=0;i<220;i++){
     const radius=minTravel+Math.random()*(maxTravel-minTravel),angle=Math.random()*Math.PI*2;
-    const px=demoBot.x+Math.cos(angle)*radius,py=demoBot.y+Math.sin(angle)*radius;
+    const px=bot.x+Math.cos(angle)*radius,py=bot.y+Math.sin(angle)*radius;
     if(starSpotSafe(px,py)){sx=px;sy=py;found=true;break}
   }
   if(!found){
     outer:for(let radius=150;radius<=500;radius+=45){
       for(let angle=0;angle<Math.PI*2;angle+=Math.PI/12){
-        const px=demoBot.x+Math.cos(angle)*radius,py=demoBot.y+Math.sin(angle)*radius;
+        const px=bot.x+Math.cos(angle)*radius,py=bot.y+Math.sin(angle)*radius;
         if(starSpotSafe(px,py)){sx=px;sy=py;found=true;break outer}
       }
     }
   }
   if(!found){sx=mapW()*.5;sy=mapH()*.5}
-  demoBot.starX=sx;demoBot.starY=sy;botSolveAt=0;botTargetKey="";botPath=[];botPathIndex=0
+  bot.starX=sx;bot.starY=sy;bot._solveAt=0;bot._targetKey="";bot._path=[];bot._pathIndex=0
 }
-function initDemoBot'''
-regex_once(r'function botPlaceStar\(\)\{\n.*?\n\}\nfunction initDemoBot', new_bot_star, 'bot star')
-
-# Reset routing state whenever the bot demo starts.
-old_init = 'players.set(BOT_ID,demoBot);botLastTag=0;botPlaceStar();drawRemote(demoBot)'
-new_init = 'players.set(BOT_ID,demoBot);botLastTag=0;botPath=[];botPathIndex=0;botPathAt=0;botTargetKey="";botStuckAt=performance.now();botLastX=demoBot.x;botLastY=demoBot.y;botPlaceStar();drawRemote(demoBot)'
-replace_once(old_init, new_init, 'bot init')
-
-# Replace angle-wiggling with lightweight A* pathfinding around map walls.
-new_bot_move = '''function botPointBlocked(px,py){
+function makeDemoBot(id,name,teamName,yRatio){
+  const bx=mapW()*(teamName==="blue"?.11:.89),by=mapH()*yRatio;
+  return{id,name,team:teamName,isBot:true,x:bx,y:by,starX:0,starY:0,carried:0,immuneUntil:0,boostUntil:0,facing:teamName==="blue"?"right":"left",lastSeen:Date.now(),_solveAt:0,_lastTag:0,_path:[],_pathIndex:0,_pathAt:0,_targetKey:"",_stuckAt:performance.now(),_lastX:bx,_lastY:by}
+}
+function initDemoBots(){
+  demoBots=[
+    makeDemoBot("demo-blue-1","Blue Bot 1","blue",.34),
+    makeDemoBot("demo-blue-2","Blue Bot 2","blue",.66),
+    makeDemoBot("demo-red-1","Red Bot 1","red",.25),
+    makeDemoBot("demo-red-2","Red Bot 2","red",.50),
+    makeDemoBot("demo-red-3","Red Bot 3","red",.75)
+  ];
+  demoBot=demoBots.find(b=>b.team==="red")||null;
+  demoBots.forEach(bot=>{players.set(bot.id,bot);botPlaceStar(bot);drawRemote(bot)})
+}
+function startBotDemo(){
+  if(socket){try{socket.close()}catch(e){}socket=null}
+  clearInterval(hostTicker);hostTicker=null;stop();players.clear();clearDemoActors();seenEvents.clear();tagCooldown.clear();
+  demoMode=true;demoBot=null;demoBots=[];isHost=false;isObserver=false;observerAuthorized=false;room="BOT";name="You";team="blue";teamAssigned=true;observerTarget="overview";
+  roomCode.textContent="BOT";status.textContent="OFFLINE 3v3 BOT DEMO";teamBadge.innerHTML='<span class="teamBadge blue">🔵 BLUE TEAM</span>';
+  if(resultNote)resultNote.textContent="Browser-only 3v3 bot demo: You + 2 Blue Bots vs 3 Red Bots.";if(demoResultActions)demoResultActions.style.display="none";
+  setMap("compact");setMathMode("add20");show($("game"));
+  const s=Date.now()+2200,e=s+ROUND;beginRound(s,e,"add20","compact");initDemoBots();
+  waitTitle.textContent="3v3 Bot Challenge";waitText.textContent="You + 2 Blue Bots vs 3 Red Bots. Solve, grab stars from Red Bots, and bank more stars to win."
+}
+function leaveBotDemo(){
+  stop();roundActive=false;finished=true;demoMode=false;demoBot=null;demoBots=[];teamAssigned=false;team=null;players.clear();clearDemoActors();star.style.display="none";results.classList.remove("open");waiting.classList.remove("open");show($("lobby"));msg.textContent=""
+}
+function botPointBlocked(px,py){
   const pad=30,p=mapProfiles[mapKey]||mapProfiles.compact;
   if(px<28||px>mapW()-28||py<34||py>mapH()-30)return true;
   return p.walls.some(a=>{const rx=mapW()*a[0]/100,ry=mapH()*a[1]/100,rw=mapW()*a[2]/100,rh=mapH()*a[3]/100;return px+pad>rx&&px-pad<rx+rw&&py+pad>ry&&py-pad<ry+rh})
@@ -66,9 +87,9 @@ function botLineClear(ax,ay,bx,by){
   for(let i=1;i<=steps;i++){const t=i/steps;if(botPointBlocked(ax+(bx-ax)*t,ay+(by-ay)*t))return false}
   return true
 }
-function botPlanPath(tx,ty){
-  if(!demoBot)return[];
-  if(botLineClear(demoBot.x,demoBot.y,tx,ty))return[{x:tx,y:ty}];
+function botPlanPath(bot,tx,ty){
+  if(!bot)return[];
+  if(botLineClear(bot.x,bot.y,tx,ty))return[{x:tx,y:ty}];
   const cell=55,cols=Math.ceil(mapW()/cell),rows=Math.ceil(mapH()/cell),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   const point=(gx,gy)=>({gx,gy,x:clamp(gx*cell+cell/2,28,mapW()-28),y:clamp(gy*cell+cell/2,34,mapH()-30)});
   function nearest(px,py){
@@ -78,7 +99,7 @@ function botPlanPath(tx,ty){
     }
     return null
   }
-  const start=nearest(demoBot.x,demoBot.y),goal=nearest(tx,ty);if(!start||!goal)return[{x:tx,y:ty}];
+  const start=nearest(bot.x,bot.y),goal=nearest(tx,ty);if(!start||!goal)return[{x:tx,y:ty}];
   const key=(gx,gy)=>gy*cols+gx,sk=key(start.gx,start.gy),gk=key(goal.gx,goal.gy),open=new Set([sk]),came=new Map(),g=new Map([[sk,0]]),f=new Map([[sk,Math.hypot(goal.gx-start.gx,goal.gy-start.gy)]]);
   const dirs=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
   let guard=0;
@@ -91,75 +112,92 @@ function botPlanPath(tx,ty){
   const rev=[];let cur=gk;while(cur!==sk){const gx=cur%cols,gy=Math.floor(cur/cols),q=point(gx,gy);rev.push({x:q.x,y:q.y});cur=came.get(cur);if(cur==null)break}rev.reverse();rev.push({x:tx,y:ty});
   return rev
 }
-function botMoveToward(tx,ty,dt){
-  if(!demoBot)return;
-  const now=performance.now(),targetKey=Math.round(tx/70)+":"+Math.round(ty/70),movedSince=Math.hypot(demoBot.x-botLastX,demoBot.y-botLastY);
-  let force=false;if(!botStuckAt)botStuckAt=now;if(now-botStuckAt>700){force=movedSince<9;botLastX=demoBot.x;botLastY=demoBot.y;botStuckAt=now}
-  if(force||targetKey!==botTargetKey||now-botPathAt>650||botPathIndex>=botPath.length){botPath=botPlanPath(tx,ty);botPathIndex=0;botPathAt=now;botTargetKey=targetKey}
-  while(botPathIndex<botPath.length&&Math.hypot(botPath[botPathIndex].x-demoBot.x,botPath[botPathIndex].y-demoBot.y)<24)botPathIndex++;
-  const wp=botPath[botPathIndex]||{x:tx,y:ty},dx=wp.x-demoBot.x,dy=wp.y-demoBot.y,len=Math.hypot(dx,dy);if(len<2)return;
-  const step=Math.min(BOT_SPEED*dt,len),nx=Math.max(28,Math.min(mapW()-28,demoBot.x+dx/len*step)),ny=Math.max(34,Math.min(mapH()-30,demoBot.y+dy/len*step));
-  if(!botPointBlocked(nx,ny)){demoBot.facing=dx<0?"left":"right";demoBot.x=nx;demoBot.y=ny}else{botPathAt=0;botTargetKey=""}
+function botMoveToward(bot,tx,ty,dt){
+  if(!bot)return;
+  const now=performance.now(),targetKey=Math.round(tx/70)+":"+Math.round(ty/70),movedSince=Math.hypot(bot.x-bot._lastX,bot.y-bot._lastY);
+  let force=false;if(!bot._stuckAt)bot._stuckAt=now;if(now-bot._stuckAt>700){force=movedSince<9;bot._lastX=bot.x;bot._lastY=bot.y;bot._stuckAt=now}
+  if(force||targetKey!==bot._targetKey||now-bot._pathAt>800||bot._pathIndex>=bot._path.length){bot._path=botPlanPath(bot,tx,ty);bot._pathIndex=0;bot._pathAt=now;bot._targetKey=targetKey}
+  while(bot._pathIndex<bot._path.length&&Math.hypot(bot._path[bot._pathIndex].x-bot.x,bot._path[bot._pathIndex].y-bot.y)<24)bot._pathIndex++;
+  const wp=bot._path[bot._pathIndex]||{x:tx,y:ty},dx=wp.x-bot.x,dy=wp.y-bot.y,len=Math.hypot(dx,dy);if(len<2)return;
+  const speed=BOT_SPEED*(bot.team==="red"?.96:1),step=Math.min(speed*dt,len),nx=Math.max(28,Math.min(mapW()-28,bot.x+dx/len*step)),ny=Math.max(34,Math.min(mapH()-30,bot.y+dy/len*step));
+  if(!botPointBlocked(nx,ny)){bot.facing=dx<0?"left":"right";bot.x=nx;bot.y=ny}else{bot._pathAt=0;bot._targetKey=""}
 }
-function botStep'''
-regex_once(r'function botMoveToward\(tx,ty,dt\)\{\n.*?\n\}\nfunction botStep', new_bot_move, 'bot movement')
-
-# Smarter bot decisions and a slightly fairer contact distance when it tries to grab the player.
-new_bot_step = '''function botStep(dt){
-  if(!demoMode||!demoBot||!roundActive||finished)return;
-  const now=Date.now();demoBot.lastSeen=now;if(now<roundStart){drawRemote(demoBot);return}
-  if(qOpen&&questionMode==="steal"){drawRemote(demoBot);return}
-  let dPlayer=Math.hypot(x-demoBot.x,y-demoBot.y),canChase=carried>0&&demoBot.carried<LIMIT&&now>=immuneUntil&&dPlayer<320;
-  if(canChase){
-    botMoveToward(x,y,dt);dPlayer=Math.hypot(x-demoBot.x,y-demoBot.y);
-    if(!qOpen&&dPlayer<72&&now-botLastTag>2200){
-      botLastTag=now;
-      if(Math.random()<.72&&carried>0&&now>=immuneUntil){carried--;demoBot.carried=Math.min(LIMIT,demoBot.carried+1);immuneUntil=now+IMMUNE;flash("🤖 Bot solved and grabbed 1 star!");carryUI();placeStar()}
-    }
-  }else if(demoBot.carried>=LIMIT){
-    botMoveToward(mapW()*.94,mapH()*.5,dt);
+function nearestDemoEnemy(bot){
+  const now=Date.now(),candidates=[];
+  if(bot.team!=="blue"&&!qOpen&&carried>0&&now>=immuneUntil)candidates.push({kind:"human",x,y,name:"You",distance:Math.hypot(x-bot.x,y-bot.y)});
+  for(const other of demoBots){
+    if(other.id===bot.id||other.team===bot.team||other.carried<=0||now<other.immuneUntil)continue;
+    candidates.push({kind:"bot",bot:other,x:other.x,y:other.y,name:other.name,distance:Math.hypot(other.x-bot.x,other.y-bot.y)})
+  }
+  candidates.sort((a,b)=>a.distance-b.distance);
+  return candidates.length&&candidates[0].distance<270?candidates[0]:null
+}
+function botSteal(bot,target,now){
+  if(!target||bot.carried>=LIMIT)return false;
+  if(target.kind==="human"){
+    if(carried<=0||now<immuneUntil)return false;
+    carried--;immuneUntil=now+IMMUNE;bot.carried=Math.min(LIMIT,bot.carried+1);flash("🤖 "+bot.name+" grabbed 1 of your stars!");carryUI();placeStar();return true
+  }
+  const victim=target.bot;
+  if(!victim||victim.carried<=0||now<victim.immuneUntil)return false;
+  victim.carried--;victim.immuneUntil=now+IMMUNE;bot.carried=Math.min(LIMIT,bot.carried+1);drawRemote(victim);return true
+}
+function botStepOne(bot,dt){
+  if(!demoMode||!bot||!roundActive||finished)return;
+  const now=Date.now();bot.lastSeen=now;if(now<roundStart){drawRemote(bot);return}
+  if(qOpen&&questionMode==="steal"&&stealTargetId===bot.id){drawRemote(bot);return}
+  if(bot.carried>=LIMIT){
+    botMoveToward(bot,bot.team==="blue"?mapW()*.06:mapW()*.94,mapH()*.5,dt)
   }else{
-    botMoveToward(demoBot.starX,demoBot.starY,dt);
-    if(Math.hypot(demoBot.x-demoBot.starX,demoBot.y-demoBot.starY)<54){if(!botSolveAt)botSolveAt=now+550+Math.random()*500;if(now>=botSolveAt){if(Math.random()<.82)demoBot.carried=Math.min(LIMIT,demoBot.carried+1);botPlaceStar()}}else botSolveAt=0
-  }
-  if(demoBot.carried>0&&demoBot.x>mapW()*(1-BASE)){const pts=demoBot.carried;demoBot.carried=0;red+=pts;score();flash("🤖 Bot banked "+pts+" star"+(pts===1?"":"s")+"!");botPlaceStar()}
-  drawRemote(demoBot)
-}
-
-function connectSocket'''
-regex_once(r'function botStep\(dt\)\{\n.*?\n\}\n\nfunction connectSocket', new_bot_step, 'bot step')
-
-# Spawn each pupil's next star inside a nearby ring rather than anywhere across a large map.
-new_place_star = '''function placeStar(){
-  if(!teamAssigned)return;
-  const minTravel=175,maxTravel=460;
-  let sx=mapW()*.5,sy=mapH()*.5,found=false;
-  for(let i=0;i<260;i++){
-    const radius=minTravel+Math.random()*(maxTravel-minTravel),angle=Math.random()*Math.PI*2;
-    const px=x+Math.cos(angle)*radius,py=y+Math.sin(angle)*radius;
-    if(starSpotSafe(px,py)){sx=px;sy=py;found=true;break}
-  }
-  if(!found){
-    outer:for(let radius=150;radius<=540;radius+=45){
-      for(let angle=0;angle<Math.PI*2;angle+=Math.PI/12){
-        const px=x+Math.cos(angle)*radius,py=y+Math.sin(angle)*radius;
-        if(starSpotSafe(px,py)){sx=px;sy=py;found=true;break outer}
-      }
+    const target=nearestDemoEnemy(bot);
+    if(target){
+      const tx=target.kind==="human"?x:target.bot.x,ty=target.kind==="human"?y:target.bot.y;
+      botMoveToward(bot,tx,ty,dt);
+      const fx=target.kind==="human"?x:target.bot.x,fy=target.kind==="human"?y:target.bot.y,d=Math.hypot(fx-bot.x,fy-bot.y);
+      if(d<72&&now-bot._lastTag>2300){bot._lastTag=now;if(Math.random()<.68)botSteal(bot,target,now)}
+    }else{
+      botMoveToward(bot,bot.starX,bot.starY,dt);
+      if(Math.hypot(bot.x-bot.starX,bot.y-bot.starY)<54){
+        if(!bot._solveAt)bot._solveAt=now+650+Math.random()*650;
+        if(now>=bot._solveAt){
+          const solveChance=bot.team==="blue"?.82:.76;
+          if(Math.random()<solveChance)bot.carried=Math.min(LIMIT,bot.carried+1);
+          botPlaceStar(bot)
+        }
+      }else bot._solveAt=0
     }
   }
-  if(!found){sx=mapW()*.5;sy=mapH()*.5}
-  starX=sx;starY=sy;star.style.left=starX+"px";star.style.top=starY+"px";star.style.display=carried<LIMIT?"block":"none"
+  const inBase=bot.team==="blue"?bot.x<mapW()*BASE:bot.x>mapW()*(1-BASE);
+  if(bot.carried>0&&inBase){
+    const pts=bot.carried;bot.carried=0;if(bot.team==="blue")blue+=pts;else red+=pts;score();flash("🏦 "+bot.name+" banked "+pts+" star"+(pts===1?"":"s")+"!");botPlaceStar(bot)
+  }
+  drawRemote(bot)
 }
-function checkStar'''
-regex_once(r'function placeStar\(\)\{\n.*?\n\}\nfunction checkStar', new_place_star, 'player star')
+function botDemoStep(dt){for(const bot of demoBots)botStepOne(bot,dt)}'''
 
-# Bot grabbing: larger demo-only contact radius, respect immunity, and permit contact while stationary.
-old_check_tag = 'function checkTag(){if(!roundActive||Date.now()<roundStart||qOpen||carried>=LIMIT)return;const now=Date.now();for(const[id,p]of players){if(p.team===team||p.carried<=0||now-(p.lastSeen||0)>5000||Math.hypot(x-p.x,y-p.y)>TAG)continue;const last=tagCooldown.get(id)||0;if(now-last<1800)continue;tagCooldown.set(id,now);openQuestion("steal",id,p.name);break}}'
-new_check_tag = 'function checkTag(){if(!roundActive||Date.now()<roundStart||qOpen||carried>=LIMIT)return;const now=Date.now();for(const[id,p]of players){const reach=demoMode&&id===BOT_ID?84:TAG;if(p.team===team||p.carried<=0||now<(p.immuneUntil||0)||now-(p.lastSeen||0)>5000||Math.hypot(x-p.x,y-p.y)>reach)continue;const last=tagCooldown.get(id)||0;if(now-last<1800)continue;tagCooldown.set(id,now);openQuestion("steal",id,p.name);break}}'
-replace_once(old_check_tag, new_check_tag, 'tag check')
+regex_once(
+    r'function clearDemoActors\(\)\{.*?\n\}\n\nfunction connectSocket',
+    multi_bot_block + '\n\nfunction connectSocket',
+    'bot demo block'
+)
 
-old_loop_piece = 'checkStar();checkBank();checkTag()}}if(now-lastHeartbeat>5000)'
-new_loop_piece = 'checkStar();checkBank()}}if(roundActive&&Date.now()>=roundStart&&!qOpen){checkTag()}if(now-lastHeartbeat>5000)'
-replace_once(old_loop_piece, new_loop_piece, 'stationary tag loop')
+old_steal = 'if(mode==="steal"){if(demoMode&&targetId===BOT_ID&&demoBot&&demoBot.carried>0&&Date.now()>=demoBot.immuneUntil){demoBot.carried--;demoBot.immuneUntil=Date.now()+IMMUNE;carried=Math.min(LIMIT,carried+1);stats.stolen++;feedback.textContent="Correct! ⚡ You grabbed 1 ⭐ from Bot!";carryUI();drawRemote(demoBot)}else{feedback.textContent="Correct! ⚡ Grab unlocked!";if(targetId)send({type:"tagAttempt",taggerId:playerId,targetId,taggerName:name,challengePassed:true,ts:Date.now()})}}'
+new_steal = 'if(mode==="steal"){const demoTarget=demoMode?players.get(targetId):null;if(demoTarget&&demoTarget.isBot&&demoTarget.team!==team&&demoTarget.carried>0&&Date.now()>=demoTarget.immuneUntil){demoTarget.carried--;demoTarget.immuneUntil=Date.now()+IMMUNE;carried=Math.min(LIMIT,carried+1);stats.stolen++;feedback.textContent="Correct! ⚡ You grabbed 1 ⭐ from "+safe(demoTarget.name)+"!";carryUI();drawRemote(demoTarget)}else{feedback.textContent="Correct! ⚡ Grab unlocked!";if(targetId)send({type:"tagAttempt",taggerId:playerId,targetId,taggerName:name,challengePassed:true,ts:Date.now()})}}'
+replace_once(old_steal, new_steal, 'player steals from bots')
 
-p.write_text(s, encoding='utf-8')
+replace_once(
+    'const reach=demoMode&&id===BOT_ID?84:TAG;',
+    'const reach=demoMode&&p.isBot?84:TAG;',
+    'bot steal reach'
+)
+
+replace_once(
+    'if(demoMode)botStep(dt);',
+    'if(demoMode)botDemoStep(dt);',
+    'multi bot loop'
+)
+
+s = s.replace('🤖 Try the Game vs Bot', '🤖 Try 3v3 vs Bots', 1)
+
+p.write_text(s, encoding="utf-8")
+print("Installed MULTI_BOT_3V3_V1")
