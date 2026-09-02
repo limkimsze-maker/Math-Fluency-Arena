@@ -1,4 +1,4 @@
-name: Add identify fractions mode
+name: Add combined like fractions mode
 
 on:
   push:
@@ -13,8 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Add identify fractions mode
-        run: python .github/scripts/fraction_mode.py
+      - name: Add combined like fractions mode
+        run: python .github/scripts/like_fractions_mode.py
       - name: Validate JavaScript
         run: |
           python3 - <<'PY'
@@ -26,13 +26,14 @@ jobs:
           Path('/tmp/star-game.js').write_text(scripts[-1],encoding='utf-8')
           PY
           node --check /tmp/star-game.js
-      - name: Confirm fraction mode
+      - name: Confirm combined like fractions mode
         run: |
+          grep -q 'LIKE_FRACTIONS_V1' index.html
+          test "$(grep -o 'value="likefrac">Adding &amp; Subtracting Like Fractions' index.html | wc -l)" -eq 2
+          grep -q 'likefrac:"Adding & Subtracting Like Fractions"' index.html
+          grep -q 'function makeLikeFractionQ' index.html
+          grep -q 'function makeLikeFractionOptions' index.html
           grep -q 'FRACTION_IDENTIFY_V1' index.html
-          grep -q 'value="fraction">Identify Fractions' index.html
-          grep -q 'function makeFractionQ' index.html
-          grep -q 'function drawFractionVisual' index.html
-          grep -q 'fractionCanvas' index.html
           grep -q 'SCARCE_SHARED_STARS_V1' index.html
           grep -q 'BOT_SETUP_OPTIONS_V1' index.html
       - name: Commit changes
@@ -40,5 +41,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Add identify fractions mode"
+          git commit -m "Add combined like fractions mode"
           git push
