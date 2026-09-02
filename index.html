@@ -550,7 +550,11 @@ function applyStarAward(d){
   if(d.targetId===playerId&&!isHost&&!isObserver){pendingStarClaimId="";if(roundActive&&Date.now()>=roundStart&&!qOpen&&carried<LIMIT)openQuestion()}
   else if(pendingStarClaimId&&!sharedStars.some(s=>s.id===pendingStarClaimId))pendingStarClaimId=""
 }
-const modeNames={add20:"Addition within 20",sub20:"Subtraction within 20",mul5:"Multiplication: ×2 to ×5 tables",div5:"Division: ÷2 to ÷5 tables",mul610:"Multiplication: ×6 to ×10 tables",div610:"Division: ÷6 to ÷10 tables",mul10:"Multiplication: ×2 to ×10 tables",div10:"Division: ÷2 to ÷10 tables",mul12:"Multiplication: ×2 to ×12 tables",div12:"Division: ÷2 to ÷12 tables",fraction:"Identify Shaded Fractions",likefrac:"Add & Subtract Like Fractions",equivfrac:"Equivalent Fractions & Simplest Form",mcm:"Convert Metres and Centimetres",kmm:"Convert Kilometres and Metres",mixed:"Mixed: + − × ÷"};
+const modeNames={add20:"Addition within 20",sub20:"Subtraction within 20",mul5:"Multiplication: ×2 to ×5 tables",div5:"Division: ÷2 to ÷5 tables",mul610:"Multiplication: ×6 to ×10 tables",div610:"Division: ÷6 to ÷10 tables",mul10:"Multiplication: ×2 to ×10 tables",div10:"Division: ÷2 to ÷10 tables",mul12:"Multiplication: ×2 to ×12 tables",div12:"Division: ÷2 to ÷12 tables",fraction:"Identify Shaded Fractions",likefrac:"Add & Subtract Like Fractions",equivfrac:"Equivalent Fractions & Simplest Form",mcm:"Convert Metres and Centimetres",kmm:"Convert Kilometres and Metres",kgg:"Convert Kilograms and Grams",mixed:"Mixed: + − × ÷"};
+for(const select of [mathModeSelect,botMathModeSelect]){
+  const option=document.createElement("option"),mixedOption=select.querySelector('option[value="mixed"]');
+  option.value="kgg";option.textContent=modeNames.kgg;select.insertBefore(option,mixedOption)
+}
 function setMathMode(mode){mathMode=modeNames[mode]?mode:"add20";if(mathModeSelect)mathModeSelect.value=mathMode;if(hostModeLabel)hostModeLabel.textContent=modeNames[mathMode];if(modeLabel)modeLabel.textContent=modeNames[mathMode];if(teamAssigned&&!roundActive&&!isHost)waitText.textContent="Waiting for your teacher to start. Math: "+modeNames[mathMode]}
 function rand(min,max){return min+Math.floor(Math.random()*(max-min+1))}
 function makeOptions(correct,minValue,maxValue){const o=new Set([correct]),offsets=[1,-1,2,-2,3,-3,5,-5,10,-10];for(const d of offsets){const v=correct+d;if(v>=minValue&&v<=maxValue)o.add(v);if(o.size>=4)break}while(o.size<4)o.add(rand(minValue,maxValue));return[...o].sort(()=>Math.random()-.5)}
@@ -649,6 +653,14 @@ function makeKilometresMetresQ(){
   const kilometres=Math.floor(totalMetres/1000),metres=totalMetres%1000,correct=totalMetres+" m";
   return{text:"Convert "+kilometres+" km "+metres+" m to metres.",correct,options:makeLabelledNumberOptions(totalMetres,1000,10000,"m",[1000,-1000,100,-100,10,-10])}
 }
+function makeKilogramsGramsQ(){
+  if(Math.random()<.5){
+    const kilograms=rand(1,10),correct=kilograms*1000+" g";
+    return{text:"Convert "+kilograms+" kg to grams.",correct,options:makeLabelledNumberOptions(kilograms*1000,1000,10000,"g",[1000,-1000,2000,-2000,100,-100])}
+  }
+  const grams=rand(1,10)*1000,correct=grams/1000+" kg";
+  return{text:"Convert "+grams+" g to kilograms.",correct,options:makeLabelledNumberOptions(grams/1000,1,10,"kg",[1,-1,2,-2,3,-3])}
+}
 function drawFractionVisual(canvas,visual){
   const v=normaliseFractionVisual(visual);if(!canvas||!v)return;
   const ctx=canvas.getContext("2d"),w=canvas.width,h=canvas.height;ctx.clearRect(0,0,w,h);ctx.save();ctx.lineWidth=3;ctx.strokeStyle="#172033";ctx.fillStyle="#ffd84a";
@@ -661,7 +673,7 @@ function drawFractionVisual(canvas,visual){
   }
   ctx.restore();canvas.style.display="block"
 }
-function makeQ(){let mode=mathMode;if(mode==="fraction")return makeFractionQ();if(mode==="likefrac")return makeLikeFractionQ();if(mode==="equivfrac")return makeEquivalentFractionQ();if(mode==="mcm")return makeMetresCentimetresQ();if(mode==="kmm")return makeKilometresMetresQ();if(mode==="mixed")mode=["add20","sub20","mul12","div12"][rand(0,3)];let a,b,c,text,min=0,max=20;if(mode==="add20"){a=rand(0,20);b=rand(0,20-a);c=a+b;text=a+" + "+b}else if(mode==="sub20"){a=rand(0,20);b=rand(0,a);c=a-b;text=a+" − "+b}else if(mode==="mul5"||mode==="mul610"||mode==="mul10"||mode==="mul12"){const low=mode==="mul610"?6:2,top=mode==="mul5"?5:mode==="mul610"?10:mode==="mul10"?10:12;a=rand(low,top);b=rand(1,12);c=a*b;text=a+" × "+b;min=1;max=top*12}else{const low=mode==="div610"?6:2,top=mode==="div5"?5:mode==="div610"?10:mode==="div10"?10:12;a=rand(low,top);c=rand(1,12);b=a*c;text=b+" ÷ "+a;min=1;max=12}return{text,correct:c,options:makeOptions(c,min,max)}}
+function makeQ(){let mode=mathMode;if(mode==="fraction")return makeFractionQ();if(mode==="likefrac")return makeLikeFractionQ();if(mode==="equivfrac")return makeEquivalentFractionQ();if(mode==="mcm")return makeMetresCentimetresQ();if(mode==="kmm")return makeKilometresMetresQ();if(mode==="kgg")return makeKilogramsGramsQ();if(mode==="mixed")mode=["add20","sub20","mul12","div12"][rand(0,3)];let a,b,c,text,min=0,max=20;if(mode==="add20"){a=rand(0,20);b=rand(0,20-a);c=a+b;text=a+" + "+b}else if(mode==="sub20"){a=rand(0,20);b=rand(0,a);c=a-b;text=a+" − "+b}else if(mode==="mul5"||mode==="mul610"||mode==="mul10"||mode==="mul12"){const low=mode==="mul610"?6:2,top=mode==="mul5"?5:mode==="mul610"?10:mode==="mul10"?10:12;a=rand(low,top);b=rand(1,12);c=a*b;text=a+" × "+b;min=1;max=top*12}else{const low=mode==="div610"?6:2,top=mode==="div5"?5:mode==="div610"?10:mode==="div10"?10:12;a=rand(low,top);c=rand(1,12);b=a*c;text=b+" ÷ "+a;min=1;max=12}return{text,correct:c,options:makeOptions(c,min,max)}}
 function sendQuestionState(open){
   if(demoMode||!teamAssigned)return;
   if(open&&liveQuestion)send({type:"questionState",id:playerId,open:true,mode:liveQuestion.mode,text:liveQuestion.text,options:liveQuestion.options,selected:liveQuestion.selected,result:liveQuestion.result,targetName:liveQuestion.targetName,visual:liveQuestion.visual||null,ts:Date.now()});
