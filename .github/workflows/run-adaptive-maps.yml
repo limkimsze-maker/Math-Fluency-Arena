@@ -33,8 +33,14 @@ jobs:
           grep -q '@keyframes bankBurstStrong' index.html
           grep -q '✅ BANKED!' index.html
           grep -q 'bankBase.classList.remove("bankBurst"),1100' index.html
-          if grep -A2 '@keyframes bankPulseStrong' index.html | grep -q '!important'; then exit 1; fi
-          if grep -A2 '@keyframes bankBurstStrong' index.html | grep -q '!important'; then exit 1; fi
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text(encoding='utf-8')
+          pulse=s.split('@keyframes bankPulseStrong',1)[1].split('.base.bankBurst',1)[0]
+          burst=s.split('@keyframes bankBurstStrong',1)[1].split('@media(prefers-reduced-motion:reduce)',1)[0]
+          if '!important' in pulse or '!important' in burst:
+              raise SystemExit('Invalid !important found inside banking keyframes')
+          PY
       - name: Commit changes
         run: |
           git config user.name "github-actions[bot]"
