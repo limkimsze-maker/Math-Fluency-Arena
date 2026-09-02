@@ -1,4 +1,4 @@
-name: Add universal grabber immunity
+name: Make grab immunity obvious
 
 on:
   push:
@@ -13,8 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Apply grabber immunity rule
-        run: python .github/scripts/grabber_immunity.py
+      - name: Improve immunity feedback
+        run: python .github/scripts/immunity_visual.py
       - name: Validate JavaScript
         run: |
           python3 - <<'PY'
@@ -26,17 +26,16 @@ jobs:
           Path('/tmp/star-game.js').write_text(m.group(1),encoding='utf-8')
           PY
           node --check /tmp/star-game.js
-      - name: Confirm universal grabber immunity
+      - name: Confirm immunity feedback
         run: |
+          grep -q 'IMMUNITY_VISUAL_V1' index.html
+          grep -q '🛡️ SAFE 2s' index.html
+          grep -q 'SAFE 2s — RUN' index.html
           grep -q 'GRABBER_IMMUNITY_V1' index.html
-          grep -q 'bot.immuneUntil=now+IMMUNE' index.html
-          grep -q 'immuneUntil=Date.now()+IMMUNE;stats.stolen++' index.html
-          if grep -q 'victim.carried--;victim.immuneUntil=now+IMMUNE' index.html; then exit 1; fi
-          if grep -q 'demoTarget.carried--;demoTarget.immuneUntil=Date.now()+IMMUNE' index.html; then exit 1; fi
       - name: Commit changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Give successful grabbers 2 seconds of immunity"
+          git commit -m "Make 2-second grab immunity obvious"
           git push
