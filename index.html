@@ -340,7 +340,7 @@ function botStepOne(bot,dt){
   const now=Date.now();bot.lastSeen=now;if(now<roundStart){drawRemote(bot);return}
   if(qOpen&&questionMode==="steal"&&stealTargetId===bot.id){drawRemote(bot);return}
   if(bot.carried>=LIMIT){
-    botMoveToward(bot,bot.team==="blue"?mapW()*.06:mapW()*.94,mapH()*.5,dt)
+    const home=baseCentre(bot.team);botMoveToward(bot,home.x,home.y,dt)
   }else{
     const target=nearestDemoEnemy(bot);
     if(target){
@@ -360,7 +360,7 @@ function botStepOne(bot,dt){
       }else bot._solveAt=0
     }
   }
-  const inBase=bot.team==="blue"?bot.x<mapW()*BASE:bot.x>mapW()*(1-BASE);
+  const inBase=fullyInsideOwnBase(bot.x,bot.y,bot.team);
   if(bot.carried>0&&inBase){
     const pts=bot.carried;bot.carried=0;if(bot.team==="blue")blue+=pts;else red+=pts;score();flash("🏦 "+bot.name+" banked "+pts+" star"+(pts===1?"":"s")+"!");botPlaceStar(bot)
   }
@@ -472,7 +472,18 @@ function activateBoost(){const now=Date.now();if(!boostReady||!roundActive||fini
 function answer(btn,v,c){if(qLock)return;qLock=true;const mode=questionMode,targetId=stealTargetId;stats.attempts++;[...answers.children].forEach(b=>b.disabled=true);if(v===c){btn.classList.add("good");stats.correct++;streak++;bestStreak=Math.max(bestStreak,streak);if(mode==="steal"){const demoTarget=demoMode?players.get(targetId):null;if(demoTarget&&demoTarget.isBot&&demoTarget.team!==team&&demoTarget.carried>0&&Date.now()>=demoTarget.immuneUntil){demoTarget.carried--;carried=Math.min(LIMIT,carried+1);immuneUntil=Date.now()+IMMUNE;stats.stolen++;feedback.textContent="Correct! ⭐ GRABBED from "+safe(demoTarget.name)+"! 🛡️ SAFE 2s — RUN!";carryUI();drawRemote(demoTarget)}else{feedback.textContent="Correct! ⚡ Grab unlocked!";if(targetId)send({type:"tagAttempt",taggerId:playerId,targetId,taggerName:name,challengePassed:true,ts:Date.now()})}}else{stats.collected++;recordStarForBoost();carried=Math.min(LIMIT,carried+1);feedback.textContent=boostReady?"Correct! ⭐ Star picked up. ⚡ Speed Boost ready!":"Correct! ⭐ Star picked up.";carryUI();sendState()}}else{btn.classList.add("bad");streak=0;if(mode==="star")boostStarStreak=0;[...answers.children].forEach(b=>{if(Number(b.textContent)===c)b.classList.add("good")});feedback.textContent=mode==="steal"?"No grab. Answer: "+c:"Answer: "+c+". Try the next star!";streakValue.textContent=0;updateBoostUI()}setTimeout(()=>{question.classList.remove("open");qOpen=false;qLock=false;if(mode==="star")placeStar();questionMode="star";stealTargetId=null;stealTargetName="";updateBoostUI()},v===c?700:1000)}
 function updateBankGuide(){world.querySelectorAll(".base").forEach(b=>b.classList.remove("bankReady"));if(teamAssigned&&team&&carried>0&&roundActive&&!finished){const own=world.querySelector(".base."+team);if(own)own.classList.add("bankReady")}}
 function carryUI(){carryValue.textContent=carried;streakValue.textContent=streak;drawSelf();updateBoostUI();updateBankGuide();if(!teamAssigned)return;const bankDir=team==="blue"?"← BLUE BASE":"RED BASE →";if(carried>=LIMIT){star.style.display="none";hint.textContent="⭐⭐⭐ FULL! 🏦 BANK NOW — "+bankDir}else if(roundActive&&Date.now()>=roundStart){star.style.display="block";hint.textContent=carried?"🏦 BANK "+carried+" ⭐ — "+bankDir:"Your ⭐ is nearby. Chase it and solve!"}}
-function checkBank(){if(!roundActive||Date.now()<roundStart||!team||carried<=0)return;const w=mapW(),inBase=team==="blue"?x<w*BASE:x>w*(1-BASE);if(!inBase||Date.now()-lastBank<700)return;lastBank=Date.now();const pts=carried,bankBase=world.querySelector(".base."+team);if(bankBase){bankBase.classList.add("bankBurst");setTimeout(()=>bankBase.classList.remove("bankBurst"),650)}carried=0;stats.banked+=pts;const eventId=eid();seenEvents.add(eventId);if(team==="blue")blue+=pts;else red+=pts;score();send({type:"bank",eventId,team,points:pts});flash("✅ BANKED "+pts+" ⭐! +"+pts+" POINT"+(pts===1?"":"S"));carryUI();placeStar();sendState()}
+// BANK_INSIDE_BASE_V1 — banking only when the ninja body is inside its own visible base
+function baseBounds(teamName){
+  const w=mapW(),h=mapH();
+  return teamName==="blue"?{left:w*.01,right:w*.08,top:h*.12,bottom:h*.88}:{left:w*.92,right:w*.99,top:h*.12,bottom:h*.88}
+}
+function baseCentre(teamName){const b=baseBounds(teamName);return{x:(b.left+b.right)/2,y:(b.top+b.bottom)/2}}
+function fullyInsideOwnBase(px,py,teamName){
+  if(teamName!=="blue"&&teamName!=="red")return false;
+  const b=baseBounds(teamName),halfW=27,halfH=28;
+  return px-halfW>=b.left&&px+halfW<=b.right&&py-halfH>=b.top&&py+halfH<=b.bottom
+}
+function checkBank(){if(!roundActive||Date.now()<roundStart||!team||carried<=0)return;const inBase=fullyInsideOwnBase(x,y,team);if(!inBase||Date.now()-lastBank<700)return;lastBank=Date.now();const pts=carried,bankBase=world.querySelector(".base."+team);if(bankBase){bankBase.classList.add("bankBurst");setTimeout(()=>bankBase.classList.remove("bankBurst"),650)}carried=0;stats.banked+=pts;const eventId=eid();seenEvents.add(eventId);if(team==="blue")blue+=pts;else red+=pts;score();send({type:"bank",eventId,team,points:pts});flash("✅ BANKED "+pts+" ⭐! +"+pts+" POINT"+(pts===1?"":"S"));carryUI();placeStar();sendState()}
 function checkTag(){if(!roundActive||Date.now()<roundStart||qOpen||carried>=LIMIT)return;const now=Date.now();for(const[id,p]of players){const reach=demoMode&&p.isBot?84:TAG;if(p.team===team||p.carried<=0||now<(p.immuneUntil||0)||now-(p.lastSeen||0)>5000||Math.hypot(x-p.x,y-p.y)>reach)continue;const last=tagCooldown.get(id)||0;if(now-last<1800)continue;tagCooldown.set(id,now);openQuestion("steal",id,p.name);break}}
 function incomingTag(d){const now=Date.now(),p=players.get(d.taggerId);if(d.challengePassed!==true||!roundActive||now<roundStart||carried<=0||now<immuneUntil||!p||p.team===team||p.carried>=LIMIT)return;carried--;flash("💫 "+safe(d.taggerName||"Opponent")+" solved correctly and grabbed 1 star!");carryUI();placeStar();sendState();send({type:"tagSuccess",taggerId:d.taggerId,targetId:playerId,targetName:name})}
 function tagSuccess(d){if(!roundActive||Date.now()<roundStart||carried>=LIMIT)return;carried++;immuneUntil=Date.now()+IMMUNE;stats.stolen++;flash("⭐ GRABBED! 🛡️ SAFE 2s — RUN!");carryUI();sendState()}
