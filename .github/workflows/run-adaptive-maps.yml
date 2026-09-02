@@ -1,4 +1,4 @@
-name: Build lightweight Singapore emoji decorations
+name: Add universal grabber immunity
 
 on:
   push:
@@ -13,8 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Update Singapore map decorations
-        run: python .github/scripts/singapore_emoji.py
+      - name: Apply grabber immunity rule
+        run: python .github/scripts/grabber_immunity.py
       - name: Validate JavaScript
         run: |
           python3 - <<'PY'
@@ -26,22 +26,17 @@ jobs:
           Path('/tmp/star-game.js').write_text(m.group(1),encoding='utf-8')
           PY
           node --check /tmp/star-game.js
-      - name: Confirm Singapore emoji decorations
+      - name: Confirm universal grabber immunity
         run: |
-          grep -q 'SINGAPORE_EMOJI_V1' index.html
-          grep -q '🏙️' index.html
-          grep -q '🌴' index.html
-          grep -q '🌺' index.html
-          grep -q '🌉' index.html
-          grep -q '🌊' index.html
-          grep -q '⛵' index.html
-          grep -q '🚌' index.html
-          grep -q '🍜' index.html
-          grep -q '🦀' index.html
+          grep -q 'GRABBER_IMMUNITY_V1' index.html
+          grep -q 'bot.immuneUntil=now+IMMUNE' index.html
+          grep -q 'immuneUntil=Date.now()+IMMUNE;stats.stolen++' index.html
+          if grep -q 'victim.carried--;victim.immuneUntil=now+IMMUNE' index.html; then exit 1; fi
+          if grep -q 'demoTarget.carried--;demoTarget.immuneUntil=Date.now()+IMMUNE' index.html; then exit 1; fi
       - name: Commit changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Use lightweight Singapore emojis on Singapore maps"
+          git commit -m "Give successful grabbers 2 seconds of immunity"
           git push
