@@ -1,4 +1,4 @@
-name: Rename map labels
+name: Add identify fractions mode
 
 on:
   push:
@@ -13,8 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Rename map labels
-        run: python .github/scripts/rename_map_labels.py
+      - name: Add identify fractions mode
+        run: python .github/scripts/fraction_mode.py
       - name: Validate JavaScript
         run: |
           python3 - <<'PY'
@@ -26,19 +26,19 @@ jobs:
           Path('/tmp/star-game.js').write_text(scripts[-1],encoding='utf-8')
           PY
           node --check /tmp/star-game.js
-      - name: Confirm renamed labels
+      - name: Confirm fraction mode
         run: |
-          grep -Fq 'Sakura Garden' index.html
-          grep -Fq 'Singapore Garden City' index.html
-          grep -Fq 'Chinese Lantern Garden' index.html
-          ! grep -Fq 'Sakura Arena' index.html
-          ! grep -Fq 'Singapore City Garden' index.html
-          ! grep -Fq 'China Garden City' index.html
+          grep -q 'FRACTION_IDENTIFY_V1' index.html
+          grep -q 'value="fraction">Identify Fractions' index.html
+          grep -q 'function makeFractionQ' index.html
+          grep -q 'function drawFractionVisual' index.html
+          grep -q 'fractionCanvas' index.html
           grep -q 'SCARCE_SHARED_STARS_V1' index.html
+          grep -q 'BOT_SETUP_OPTIONS_V1' index.html
       - name: Commit changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Rename map themes"
+          git commit -m "Add identify fractions mode"
           git push
