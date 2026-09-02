@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Add 12 themed map layouts and previews
-        run: python .github/scripts/device_compatibility.py
+        run: python .github/scripts/map_chooser.py
       - name: Validate JavaScript
         run: |
           python3 - <<'PY'
