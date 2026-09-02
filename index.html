@@ -88,7 +88,7 @@ button,input,select{max-width:100%}button,#controls{-webkit-user-select:none;use
 </style>
 </head>
 <body>
-<section id="lobby" class="screen active"><div class="card"><h1>⭐ Math Star Chase and Bank</h1><div class="tag">⛩️ Sakura Arena · Solve. Grab. Bank. Win. 🌸</div><p class="small">Try the game against a bot, or join a live room with a 4-digit code.</p><button id="tryBot" class="btn primary">🤖 Try the Game vs Bot</button><div class="small">Browser-only demo · no room code needed</div><hr><input id="roomInput" class="code" maxlength="4" inputmode="numeric" placeholder="0000"><button id="join" class="btn">Join Room</button><details><summary><b>👁️ Observer Access</b></summary><p class="small">Invited observers need the room code above and the separate Observer PIN.</p><input id="observerPinInput" class="text" maxlength="4" inputmode="numeric" placeholder="Observer PIN"><button id="joinObserver" class="btn">👁️ Join as Observer</button></details><div id="msg" class="msg"></div><details><summary><b>Creator Access</b></summary><p class="small">Live class hosting is password protected.</p><input id="creatorPassword" class="text" type="password" placeholder="Creator password"><button id="creator" class="btn">🔒 Open Live Class Room</button></details></div></section>
+<section id="lobby" class="screen active"><div class="card"><h1>⭐ Math Star Chase and Bank</h1><div class="tag">⛩️ Sakura Arena · Solve. Grab. Bank. Win. 🌸</div><p class="small">Try the game against a bot, or join a live room with a 4-digit code.</p><button id="tryBot" class="btn primary">🤖 Try 3v3 vs Bots</button><div class="small">Browser-only demo · no room code needed</div><hr><input id="roomInput" class="code" maxlength="4" inputmode="numeric" placeholder="0000"><button id="join" class="btn">Join Room</button><details><summary><b>👁️ Observer Access</b></summary><p class="small">Invited observers need the room code above and the separate Observer PIN.</p><input id="observerPinInput" class="text" maxlength="4" inputmode="numeric" placeholder="Observer PIN"><button id="joinObserver" class="btn">👁️ Join as Observer</button></details><div id="msg" class="msg"></div><details><summary><b>Creator Access</b></summary><p class="small">Live class hosting is password protected.</p><input id="creatorPassword" class="text" type="password" placeholder="Creator password"><button id="creator" class="btn">🔒 Open Live Class Room</button></details></div></section>
 
 <section id="hostLobby" class="screen"><div class="card"><h1>Class Lobby</h1><p class="small">Share this room code with your pupils.</p><div id="hostRoomCode" class="room"></div><p class="small"><b>👁️ Observer PIN</b></p><div id="hostObserverPin" class="room observerPin"></div><p class="small">Share the Observer PIN only with invited observers. They can watch the arena and follow players, but cannot control the game.</p><div class="hostGrid"><div class="hostStat">Players<strong id="playerCount">0</strong></div><div class="hostStat">Teams<strong><span id="blueCount">0</span> 🔵 · 🔴 <span id="redCount">0</span></strong></div></div><h2>Math Fluency</h2><select id="mathModeSelect" class="modeSelect"><option value="add20">Addition within 20</option><option value="sub20">Subtraction within 20</option><option value="mul5">Multiplication: ×2 to ×5 tables</option><option value="div5">Division: ÷2 to ÷5 tables</option><option value="mul610">Multiplication: ×6 to ×10 tables</option><option value="div610">Division: ÷6 to ÷10 tables</option><option value="mul10">Multiplication: ×2 to ×10 tables</option><option value="div10">Division: ÷2 to ÷10 tables</option><option value="mul12">Multiplication: ×2 to ×12 tables</option><option value="div12">Division: ÷2 to ÷12 tables</option><option value="mixed">Mixed: + − × ÷</option></select><div class="small">Map: <b id="hostMapPreview">Compact · 0 players</b> (automatic)</div><h2>Who's in?</h2><div id="roster" class="roster"><div class="small">Waiting for pupils to join…</div></div><button id="startRound" class="btn primary" disabled>Start 3-Minute Round</button><div id="hostMsg" class="msg">The button activates when at least one pupil is ready.</div><div id="hostSafetyLobby" class="hostSafetyWarn">⚠️ <b>Keep this host page open while the live session is in use.</b> Closing or refreshing it disconnects the host, may stop new players from being assigned, removes the host controls and Teacher Observer view, may prevent local player results from being recorded, and can eventually cause the room code to be released.</div><div id="safeCloseLobby" class="safeCloseNotice">✅ All players have finished and left the live room. It is now safe to close this host page.</div><details><summary class="recordsSummary"><b>📊 Local Player Records</b></summary><div class="recordsNote small">Saved only on this browser/device. No pupil record is uploaded to a separate records database.</div><div id="localRecords"><div class="small">No saved rounds yet.</div></div><button id="clearRecords" class="btn" type="button">Clear Local Records</button></details></div></section>
 
@@ -118,7 +118,7 @@ blueScore=$("blueScore"),redScore=$("redScore"),carryValue=$("carryValue"),strea
 sCorrect=$("sCorrect"),sAccuracy=$("sAccuracy"),sStreak=$("sStreak"),sCollected=$("sCollected"),sStolen=$("sStolen"),sBanked=$("sBanked"),resultNote=$("resultNote"),demoResultActions=$("demoResultActions"),demoAgain=$("demoAgain"),demoHome=$("demoHome");
 const playerId=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random()).slice(0,8),players=new Map(),move={up:false,down:false,left:false,right:false},tagCooldown=new Map(),seenEvents=new Set(),stats={attempts:0,correct:0,collected:0,stolen:0,banked:0};
 const RECORD_KEY="mathStarChaseLocalRecordsV1",MAX_SAVED_ROUNDS=30,BOT_ID="demo-bot",BOT_SPEED=170;
-let room="",name="",team=null,socket=null,isHost=false,isObserver=false,observerAuthorized=false,observerPin="",pendingObserverPin="",teamAssigned=false,x=100,y=100,starX=300,starY=220,carried=0,immuneUntil=0,blue=0,red=0,streak=0,bestStreak=0,boostStarStreak=0,boostReady=false,boostUntil=0,qOpen=false,qLock=false,questionMode="star",stealTargetId=null,stealTargetName="",mathMode="add20",mapKey="compact",roundStart=0,roundEnd=0,roundActive=false,finished=false,lastFrame=performance.now(),lastSend=0,lastHeartbeat=0,lastBank=0,moved=false,toastTimer,hostTicker=null,facing="right",observerTarget="overview",demoMode=false,demoBot=null,botSolveAt=0,botLastTag=0,botPath=[],botPathIndex=0,botPathAt=0,botTargetKey="",botStuckAt=0,botLastX=0,botLastY=0,hostHadPlayers=false,safeToClose=false;
+let room="",name="",team=null,socket=null,isHost=false,isObserver=false,observerAuthorized=false,observerPin="",pendingObserverPin="",teamAssigned=false,x=100,y=100,starX=300,starY=220,carried=0,immuneUntil=0,blue=0,red=0,streak=0,bestStreak=0,boostStarStreak=0,boostReady=false,boostUntil=0,qOpen=false,qLock=false,questionMode="star",stealTargetId=null,stealTargetName="",mathMode="add20",mapKey="compact",roundStart=0,roundEnd=0,roundActive=false,finished=false,lastFrame=performance.now(),lastSend=0,lastHeartbeat=0,lastBank=0,moved=false,toastTimer,hostTicker=null,facing="right",observerTarget="overview",demoMode=false,demoBot=null,demoBots=[],botSolveAt=0,botLastTag=0,botPath=[],botPathIndex=0,botPathAt=0,botTargetKey="",botStuckAt=0,botLastX=0,botLastY=0,hostHadPlayers=false,safeToClose=false;
 const mapProfiles={
  compact:{name:"Compact",w:1300,h:820,paths:[[12,24,76,8],[12,68,76,8]],walls:[[23,11,4,27],[23,56,4,31],[73,11,4,31],[73,60,4,27],[37,29,22,4],[42,66,21,4],[48,40,4,16]],bushes:[[33,46],[65,48],[50,20]]},
  standard:{name:"Standard",w:1700,h:1050,paths:[[11,20,78,8],[11,72,78,8]],walls:[[18,10,4,26],[18,54,4,34],[31,24,4,31],[31,70,4,18],[45,10,4,25],[45,50,4,38],[59,24,4,31],[59,70,4,18],[73,10,4,26],[73,54,4,34],[22,42,21,4],[57,42,21,4]],bushes:[[25,64],[38,18],[50,62],[64,18],[77,64]]},
@@ -140,43 +140,54 @@ function openHost(code){isHost=true;isObserver=false;observerAuthorized=false;pe
 function enterArena(){const n=safe(playerName.value);if(!n){nameMsg.textContent="Please enter a name.";return}name=n;roomCode.textContent=room;show($("game"));waiting.classList.add("open");star.style.display="none";connectSocket()}
 
 function clearDemoActors(){world.querySelectorAll(".player").forEach(el=>el.remove())}
-// GAMEPLAY_TUNING_V2
-function botPlaceStar(){
-  if(!demoBot)return;
+// MULTI_BOT_3V3_V1
+function botPlaceStar(bot){
+  if(!bot)return;
   const minTravel=165,maxTravel=420;
   let sx=mapW()*.5,sy=mapH()*.5,found=false;
   for(let i=0;i<220;i++){
     const radius=minTravel+Math.random()*(maxTravel-minTravel),angle=Math.random()*Math.PI*2;
-    const px=demoBot.x+Math.cos(angle)*radius,py=demoBot.y+Math.sin(angle)*radius;
+    const px=bot.x+Math.cos(angle)*radius,py=bot.y+Math.sin(angle)*radius;
     if(starSpotSafe(px,py)){sx=px;sy=py;found=true;break}
   }
   if(!found){
     outer:for(let radius=150;radius<=500;radius+=45){
       for(let angle=0;angle<Math.PI*2;angle+=Math.PI/12){
-        const px=demoBot.x+Math.cos(angle)*radius,py=demoBot.y+Math.sin(angle)*radius;
+        const px=bot.x+Math.cos(angle)*radius,py=bot.y+Math.sin(angle)*radius;
         if(starSpotSafe(px,py)){sx=px;sy=py;found=true;break outer}
       }
     }
   }
   if(!found){sx=mapW()*.5;sy=mapH()*.5}
-  demoBot.starX=sx;demoBot.starY=sy;botSolveAt=0;botTargetKey="";botPath=[];botPathIndex=0
+  bot.starX=sx;bot.starY=sy;bot._solveAt=0;bot._targetKey="";bot._path=[];bot._pathIndex=0
 }
-function initDemoBot(){
-  demoBot={id:BOT_ID,name:"Bot",team:"red",x:mapW()*.90,y:mapH()*.5,starX:0,starY:0,carried:0,immuneUntil:0,boostUntil:0,facing:"left",lastSeen:Date.now()};
-  players.set(BOT_ID,demoBot);botLastTag=0;botPath=[];botPathIndex=0;botPathAt=0;botTargetKey="";botStuckAt=performance.now();botLastX=demoBot.x;botLastY=demoBot.y;botPlaceStar();drawRemote(demoBot)
+function makeDemoBot(id,name,teamName,yRatio){
+  const bx=mapW()*(teamName==="blue"?.11:.89),by=mapH()*yRatio;
+  return{id,name,team:teamName,isBot:true,x:bx,y:by,starX:0,starY:0,carried:0,immuneUntil:0,boostUntil:0,facing:teamName==="blue"?"right":"left",lastSeen:Date.now(),_solveAt:0,_lastTag:0,_path:[],_pathIndex:0,_pathAt:0,_targetKey:"",_stuckAt:performance.now(),_lastX:bx,_lastY:by}
+}
+function initDemoBots(){
+  demoBots=[
+    makeDemoBot("demo-blue-1","Blue Bot 1","blue",.34),
+    makeDemoBot("demo-blue-2","Blue Bot 2","blue",.66),
+    makeDemoBot("demo-red-1","Red Bot 1","red",.25),
+    makeDemoBot("demo-red-2","Red Bot 2","red",.50),
+    makeDemoBot("demo-red-3","Red Bot 3","red",.75)
+  ];
+  demoBot=demoBots.find(b=>b.team==="red")||null;
+  demoBots.forEach(bot=>{players.set(bot.id,bot);botPlaceStar(bot);drawRemote(bot)})
 }
 function startBotDemo(){
   if(socket){try{socket.close()}catch(e){}socket=null}
   clearInterval(hostTicker);hostTicker=null;stop();players.clear();clearDemoActors();seenEvents.clear();tagCooldown.clear();
-  demoMode=true;isHost=false;isObserver=false;observerAuthorized=false;room="BOT";name="You";team="blue";teamAssigned=true;observerTarget="overview";
-  roomCode.textContent="BOT";status.textContent="OFFLINE BOT DEMO";teamBadge.innerHTML='<span class="teamBadge blue">🔵 BLUE TEAM</span>';
-  if(resultNote)resultNote.textContent="Browser-only bot demo.";if(demoResultActions)demoResultActions.style.display="none";
+  demoMode=true;demoBot=null;demoBots=[];isHost=false;isObserver=false;observerAuthorized=false;room="BOT";name="You";team="blue";teamAssigned=true;observerTarget="overview";
+  roomCode.textContent="BOT";status.textContent="OFFLINE 3v3 BOT DEMO";teamBadge.innerHTML='<span class="teamBadge blue">🔵 BLUE TEAM</span>';
+  if(resultNote)resultNote.textContent="Browser-only 3v3 bot demo: You + 2 Blue Bots vs 3 Red Bots.";if(demoResultActions)demoResultActions.style.display="none";
   setMap("compact");setMathMode("add20");show($("game"));
-  const s=Date.now()+2200,e=s+ROUND;beginRound(s,e,"add20","compact");initDemoBot();
-  waitTitle.textContent="Bot Challenge";waitText.textContent="You are Blue. Beat the Red Bot by solving, grabbing and banking more stars."
+  const s=Date.now()+2200,e=s+ROUND;beginRound(s,e,"add20","compact");initDemoBots();
+  waitTitle.textContent="3v3 Bot Challenge";waitText.textContent="You + 2 Blue Bots vs 3 Red Bots. Solve, grab stars from Red Bots, and bank more stars to win."
 }
 function leaveBotDemo(){
-  stop();roundActive=false;finished=true;demoMode=false;demoBot=null;teamAssigned=false;team=null;players.clear();clearDemoActors();star.style.display="none";results.classList.remove("open");waiting.classList.remove("open");show($("lobby"));msg.textContent=""
+  stop();roundActive=false;finished=true;demoMode=false;demoBot=null;demoBots=[];teamAssigned=false;team=null;players.clear();clearDemoActors();star.style.display="none";results.classList.remove("open");waiting.classList.remove("open");show($("lobby"));msg.textContent=""
 }
 function botPointBlocked(px,py){
   const pad=30,p=mapProfiles[mapKey]||mapProfiles.compact;
@@ -188,9 +199,9 @@ function botLineClear(ax,ay,bx,by){
   for(let i=1;i<=steps;i++){const t=i/steps;if(botPointBlocked(ax+(bx-ax)*t,ay+(by-ay)*t))return false}
   return true
 }
-function botPlanPath(tx,ty){
-  if(!demoBot)return[];
-  if(botLineClear(demoBot.x,demoBot.y,tx,ty))return[{x:tx,y:ty}];
+function botPlanPath(bot,tx,ty){
+  if(!bot)return[];
+  if(botLineClear(bot.x,bot.y,tx,ty))return[{x:tx,y:ty}];
   const cell=55,cols=Math.ceil(mapW()/cell),rows=Math.ceil(mapH()/cell),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   const point=(gx,gy)=>({gx,gy,x:clamp(gx*cell+cell/2,28,mapW()-28),y:clamp(gy*cell+cell/2,34,mapH()-30)});
   function nearest(px,py){
@@ -200,7 +211,7 @@ function botPlanPath(tx,ty){
     }
     return null
   }
-  const start=nearest(demoBot.x,demoBot.y),goal=nearest(tx,ty);if(!start||!goal)return[{x:tx,y:ty}];
+  const start=nearest(bot.x,bot.y),goal=nearest(tx,ty);if(!start||!goal)return[{x:tx,y:ty}];
   const key=(gx,gy)=>gy*cols+gx,sk=key(start.gx,start.gy),gk=key(goal.gx,goal.gy),open=new Set([sk]),came=new Map(),g=new Map([[sk,0]]),f=new Map([[sk,Math.hypot(goal.gx-start.gx,goal.gy-start.gy)]]);
   const dirs=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
   let guard=0;
@@ -213,36 +224,68 @@ function botPlanPath(tx,ty){
   const rev=[];let cur=gk;while(cur!==sk){const gx=cur%cols,gy=Math.floor(cur/cols),q=point(gx,gy);rev.push({x:q.x,y:q.y});cur=came.get(cur);if(cur==null)break}rev.reverse();rev.push({x:tx,y:ty});
   return rev
 }
-function botMoveToward(tx,ty,dt){
-  if(!demoBot)return;
-  const now=performance.now(),targetKey=Math.round(tx/70)+":"+Math.round(ty/70),movedSince=Math.hypot(demoBot.x-botLastX,demoBot.y-botLastY);
-  let force=false;if(!botStuckAt)botStuckAt=now;if(now-botStuckAt>700){force=movedSince<9;botLastX=demoBot.x;botLastY=demoBot.y;botStuckAt=now}
-  if(force||targetKey!==botTargetKey||now-botPathAt>650||botPathIndex>=botPath.length){botPath=botPlanPath(tx,ty);botPathIndex=0;botPathAt=now;botTargetKey=targetKey}
-  while(botPathIndex<botPath.length&&Math.hypot(botPath[botPathIndex].x-demoBot.x,botPath[botPathIndex].y-demoBot.y)<24)botPathIndex++;
-  const wp=botPath[botPathIndex]||{x:tx,y:ty},dx=wp.x-demoBot.x,dy=wp.y-demoBot.y,len=Math.hypot(dx,dy);if(len<2)return;
-  const step=Math.min(BOT_SPEED*dt,len),nx=Math.max(28,Math.min(mapW()-28,demoBot.x+dx/len*step)),ny=Math.max(34,Math.min(mapH()-30,demoBot.y+dy/len*step));
-  if(!botPointBlocked(nx,ny)){demoBot.facing=dx<0?"left":"right";demoBot.x=nx;demoBot.y=ny}else{botPathAt=0;botTargetKey=""}
+function botMoveToward(bot,tx,ty,dt){
+  if(!bot)return;
+  const now=performance.now(),targetKey=Math.round(tx/70)+":"+Math.round(ty/70),movedSince=Math.hypot(bot.x-bot._lastX,bot.y-bot._lastY);
+  let force=false;if(!bot._stuckAt)bot._stuckAt=now;if(now-bot._stuckAt>700){force=movedSince<9;bot._lastX=bot.x;bot._lastY=bot.y;bot._stuckAt=now}
+  if(force||targetKey!==bot._targetKey||now-bot._pathAt>800||bot._pathIndex>=bot._path.length){bot._path=botPlanPath(bot,tx,ty);bot._pathIndex=0;bot._pathAt=now;bot._targetKey=targetKey}
+  while(bot._pathIndex<bot._path.length&&Math.hypot(bot._path[bot._pathIndex].x-bot.x,bot._path[bot._pathIndex].y-bot.y)<24)bot._pathIndex++;
+  const wp=bot._path[bot._pathIndex]||{x:tx,y:ty},dx=wp.x-bot.x,dy=wp.y-bot.y,len=Math.hypot(dx,dy);if(len<2)return;
+  const speed=BOT_SPEED*(bot.team==="red"?.96:1),step=Math.min(speed*dt,len),nx=Math.max(28,Math.min(mapW()-28,bot.x+dx/len*step)),ny=Math.max(34,Math.min(mapH()-30,bot.y+dy/len*step));
+  if(!botPointBlocked(nx,ny)){bot.facing=dx<0?"left":"right";bot.x=nx;bot.y=ny}else{bot._pathAt=0;bot._targetKey=""}
 }
-function botStep(dt){
-  if(!demoMode||!demoBot||!roundActive||finished)return;
-  const now=Date.now();demoBot.lastSeen=now;if(now<roundStart){drawRemote(demoBot);return}
-  if(qOpen&&questionMode==="steal"){drawRemote(demoBot);return}
-  let dPlayer=Math.hypot(x-demoBot.x,y-demoBot.y),canChase=carried>0&&demoBot.carried<LIMIT&&now>=immuneUntil&&dPlayer<320;
-  if(canChase){
-    botMoveToward(x,y,dt);dPlayer=Math.hypot(x-demoBot.x,y-demoBot.y);
-    if(!qOpen&&dPlayer<72&&now-botLastTag>2200){
-      botLastTag=now;
-      if(Math.random()<.72&&carried>0&&now>=immuneUntil){carried--;demoBot.carried=Math.min(LIMIT,demoBot.carried+1);immuneUntil=now+IMMUNE;flash("🤖 Bot solved and grabbed 1 star!");carryUI();placeStar()}
-    }
-  }else if(demoBot.carried>=LIMIT){
-    botMoveToward(mapW()*.94,mapH()*.5,dt);
-  }else{
-    botMoveToward(demoBot.starX,demoBot.starY,dt);
-    if(Math.hypot(demoBot.x-demoBot.starX,demoBot.y-demoBot.starY)<54){if(!botSolveAt)botSolveAt=now+550+Math.random()*500;if(now>=botSolveAt){if(Math.random()<.82)demoBot.carried=Math.min(LIMIT,demoBot.carried+1);botPlaceStar()}}else botSolveAt=0
+function nearestDemoEnemy(bot){
+  const now=Date.now(),candidates=[];
+  if(bot.team!=="blue"&&!qOpen&&carried>0&&now>=immuneUntil)candidates.push({kind:"human",x,y,name:"You",distance:Math.hypot(x-bot.x,y-bot.y)});
+  for(const other of demoBots){
+    if(other.id===bot.id||other.team===bot.team||other.carried<=0||now<other.immuneUntil)continue;
+    candidates.push({kind:"bot",bot:other,x:other.x,y:other.y,name:other.name,distance:Math.hypot(other.x-bot.x,other.y-bot.y)})
   }
-  if(demoBot.carried>0&&demoBot.x>mapW()*(1-BASE)){const pts=demoBot.carried;demoBot.carried=0;red+=pts;score();flash("🤖 Bot banked "+pts+" star"+(pts===1?"":"s")+"!");botPlaceStar()}
-  drawRemote(demoBot)
+  candidates.sort((a,b)=>a.distance-b.distance);
+  return candidates.length&&candidates[0].distance<270?candidates[0]:null
 }
+function botSteal(bot,target,now){
+  if(!target||bot.carried>=LIMIT)return false;
+  if(target.kind==="human"){
+    if(carried<=0||now<immuneUntil)return false;
+    carried--;immuneUntil=now+IMMUNE;bot.carried=Math.min(LIMIT,bot.carried+1);flash("🤖 "+bot.name+" grabbed 1 of your stars!");carryUI();placeStar();return true
+  }
+  const victim=target.bot;
+  if(!victim||victim.carried<=0||now<victim.immuneUntil)return false;
+  victim.carried--;victim.immuneUntil=now+IMMUNE;bot.carried=Math.min(LIMIT,bot.carried+1);drawRemote(victim);return true
+}
+function botStepOne(bot,dt){
+  if(!demoMode||!bot||!roundActive||finished)return;
+  const now=Date.now();bot.lastSeen=now;if(now<roundStart){drawRemote(bot);return}
+  if(qOpen&&questionMode==="steal"&&stealTargetId===bot.id){drawRemote(bot);return}
+  if(bot.carried>=LIMIT){
+    botMoveToward(bot,bot.team==="blue"?mapW()*.06:mapW()*.94,mapH()*.5,dt)
+  }else{
+    const target=nearestDemoEnemy(bot);
+    if(target){
+      const tx=target.kind==="human"?x:target.bot.x,ty=target.kind==="human"?y:target.bot.y;
+      botMoveToward(bot,tx,ty,dt);
+      const fx=target.kind==="human"?x:target.bot.x,fy=target.kind==="human"?y:target.bot.y,d=Math.hypot(fx-bot.x,fy-bot.y);
+      if(d<72&&now-bot._lastTag>2300){bot._lastTag=now;if(Math.random()<.68)botSteal(bot,target,now)}
+    }else{
+      botMoveToward(bot,bot.starX,bot.starY,dt);
+      if(Math.hypot(bot.x-bot.starX,bot.y-bot.starY)<54){
+        if(!bot._solveAt)bot._solveAt=now+650+Math.random()*650;
+        if(now>=bot._solveAt){
+          const solveChance=bot.team==="blue"?.82:.76;
+          if(Math.random()<solveChance)bot.carried=Math.min(LIMIT,bot.carried+1);
+          botPlaceStar(bot)
+        }
+      }else bot._solveAt=0
+    }
+  }
+  const inBase=bot.team==="blue"?bot.x<mapW()*BASE:bot.x>mapW()*(1-BASE);
+  if(bot.carried>0&&inBase){
+    const pts=bot.carried;bot.carried=0;if(bot.team==="blue")blue+=pts;else red+=pts;score();flash("🏦 "+bot.name+" banked "+pts+" star"+(pts===1?"":"s")+"!");botPlaceStar(bot)
+  }
+  drawRemote(bot)
+}
+function botDemoStep(dt){for(const bot of demoBots)botStepOne(bot,dt)}
 
 function connectSocket(){if(socket&&socket.readyState<=1)return;socket=new WebSocket(WS+"/room/"+encodeURIComponent(room));socket.addEventListener("open",()=>{if(isHost){send({type:"hostHello",id:playerId});send({type:"needPlayers",id:playerId});renderHostRoster()}else if(isObserver){requestObserverAccess()}else{status.textContent="CONNECTED ✓";requestTeam()}});socket.addEventListener("close",()=>{if(isObserver&&!observerAuthorized){show($("lobby"));msg.textContent="Observer connection closed. Try again."}else if(!isHost&&!isObserver)status.textContent="DISCONNECTED"});socket.addEventListener("error",()=>{if(isObserver&&!observerAuthorized){show($("lobby"));msg.textContent="Observer connection error."}else if(!isHost&&!isObserver)status.textContent="CONNECTION ERROR"});socket.addEventListener("message",e=>{try{handle(JSON.parse(e.data))}catch(err){console.error(err)}})}
 function handle(d){
@@ -345,15 +388,15 @@ function openQuestion(mode="star",targetId=null,targetName=""){qOpen=true;stop()
 function recordStarForBoost(){if(boostReady||Date.now()<boostUntil)return;boostStarStreak++;if(boostStarStreak>=BOOST_STREAK_TARGET){boostStarStreak=0;boostReady=true;flash("⚡ Speed Boost earned! Use it when ready.");updateBoostUI()}}
 function updateBoostUI(){if(!boostBtn)return;const now=Date.now(),active=roundActive&&!finished&&boostUntil>now;if(active){boostBtn.style.display="block";boostBtn.disabled=true;boostBtn.classList.remove("ready");boostBtn.classList.add("active");boostBtn.textContent="⚡ SPEED BOOST "+Math.max(1,Math.ceil((boostUntil-now)/1000))+"s"}else if(boostReady&&roundActive&&!finished){boostBtn.style.display="block";boostBtn.disabled=qOpen||now<roundStart;boostBtn.classList.add("ready");boostBtn.classList.remove("active");boostBtn.textContent="⚡ SPEED BOOST (7s)"}else{boostBtn.style.display="none";boostBtn.disabled=true;boostBtn.classList.remove("ready","active")}}
 function activateBoost(){const now=Date.now();if(!boostReady||!roundActive||finished||qOpen||now<roundStart)return;boostReady=false;boostStarStreak=0;boostUntil=Math.min(roundEnd,now+BOOST_MS);flash("⚡ SPEED BOOST! 7 seconds!");updateBoostUI();drawSelf();sendState()}
-function answer(btn,v,c){if(qLock)return;qLock=true;const mode=questionMode,targetId=stealTargetId;stats.attempts++;[...answers.children].forEach(b=>b.disabled=true);if(v===c){btn.classList.add("good");stats.correct++;streak++;bestStreak=Math.max(bestStreak,streak);if(mode==="steal"){if(demoMode&&targetId===BOT_ID&&demoBot&&demoBot.carried>0&&Date.now()>=demoBot.immuneUntil){demoBot.carried--;demoBot.immuneUntil=Date.now()+IMMUNE;carried=Math.min(LIMIT,carried+1);stats.stolen++;feedback.textContent="Correct! ⚡ You grabbed 1 ⭐ from Bot!";carryUI();drawRemote(demoBot)}else{feedback.textContent="Correct! ⚡ Grab unlocked!";if(targetId)send({type:"tagAttempt",taggerId:playerId,targetId,taggerName:name,challengePassed:true,ts:Date.now()})}}else{stats.collected++;recordStarForBoost();carried=Math.min(LIMIT,carried+1);feedback.textContent=boostReady?"Correct! ⭐ Star picked up. ⚡ Speed Boost ready!":"Correct! ⭐ Star picked up.";carryUI();sendState()}}else{btn.classList.add("bad");streak=0;if(mode==="star")boostStarStreak=0;[...answers.children].forEach(b=>{if(Number(b.textContent)===c)b.classList.add("good")});feedback.textContent=mode==="steal"?"No grab. Answer: "+c:"Answer: "+c+". Try the next star!";streakValue.textContent=0;updateBoostUI()}setTimeout(()=>{question.classList.remove("open");qOpen=false;qLock=false;if(mode==="star")placeStar();questionMode="star";stealTargetId=null;stealTargetName="";updateBoostUI()},v===c?700:1000)}
+function answer(btn,v,c){if(qLock)return;qLock=true;const mode=questionMode,targetId=stealTargetId;stats.attempts++;[...answers.children].forEach(b=>b.disabled=true);if(v===c){btn.classList.add("good");stats.correct++;streak++;bestStreak=Math.max(bestStreak,streak);if(mode==="steal"){const demoTarget=demoMode?players.get(targetId):null;if(demoTarget&&demoTarget.isBot&&demoTarget.team!==team&&demoTarget.carried>0&&Date.now()>=demoTarget.immuneUntil){demoTarget.carried--;demoTarget.immuneUntil=Date.now()+IMMUNE;carried=Math.min(LIMIT,carried+1);stats.stolen++;feedback.textContent="Correct! ⚡ You grabbed 1 ⭐ from "+safe(demoTarget.name)+"!";carryUI();drawRemote(demoTarget)}else{feedback.textContent="Correct! ⚡ Grab unlocked!";if(targetId)send({type:"tagAttempt",taggerId:playerId,targetId,taggerName:name,challengePassed:true,ts:Date.now()})}}else{stats.collected++;recordStarForBoost();carried=Math.min(LIMIT,carried+1);feedback.textContent=boostReady?"Correct! ⭐ Star picked up. ⚡ Speed Boost ready!":"Correct! ⭐ Star picked up.";carryUI();sendState()}}else{btn.classList.add("bad");streak=0;if(mode==="star")boostStarStreak=0;[...answers.children].forEach(b=>{if(Number(b.textContent)===c)b.classList.add("good")});feedback.textContent=mode==="steal"?"No grab. Answer: "+c:"Answer: "+c+". Try the next star!";streakValue.textContent=0;updateBoostUI()}setTimeout(()=>{question.classList.remove("open");qOpen=false;qLock=false;if(mode==="star")placeStar();questionMode="star";stealTargetId=null;stealTargetName="";updateBoostUI()},v===c?700:1000)}
 function carryUI(){carryValue.textContent=carried;streakValue.textContent=streak;drawSelf();updateBoostUI();if(!teamAssigned)return;if(carried>=LIMIT){star.style.display="none";hint.textContent="You have 3 ⭐. Get back to your "+team.toUpperCase()+" base!"}else if(roundActive&&Date.now()>=roundStart){star.style.display="block";hint.textContent=carried?"Carry "+carried+" safely to your base — or chase another nearby ⭐.":"Your ⭐ is nearby. Chase it and solve!"}}
 function checkBank(){if(!roundActive||Date.now()<roundStart||!team||carried<=0)return;const w=mapW(),inBase=team==="blue"?x<w*BASE:x>w*(1-BASE);if(!inBase||Date.now()-lastBank<700)return;lastBank=Date.now();const pts=carried;carried=0;stats.banked+=pts;const eventId=eid();seenEvents.add(eventId);if(team==="blue")blue+=pts;else red+=pts;score();send({type:"bank",eventId,team,points:pts});flash("🏦 Banked "+pts+" star"+(pts===1?"":"s")+"!");carryUI();placeStar();sendState()}
-function checkTag(){if(!roundActive||Date.now()<roundStart||qOpen||carried>=LIMIT)return;const now=Date.now();for(const[id,p]of players){const reach=demoMode&&id===BOT_ID?84:TAG;if(p.team===team||p.carried<=0||now<(p.immuneUntil||0)||now-(p.lastSeen||0)>5000||Math.hypot(x-p.x,y-p.y)>reach)continue;const last=tagCooldown.get(id)||0;if(now-last<1800)continue;tagCooldown.set(id,now);openQuestion("steal",id,p.name);break}}
+function checkTag(){if(!roundActive||Date.now()<roundStart||qOpen||carried>=LIMIT)return;const now=Date.now();for(const[id,p]of players){const reach=demoMode&&p.isBot?84:TAG;if(p.team===team||p.carried<=0||now<(p.immuneUntil||0)||now-(p.lastSeen||0)>5000||Math.hypot(x-p.x,y-p.y)>reach)continue;const last=tagCooldown.get(id)||0;if(now-last<1800)continue;tagCooldown.set(id,now);openQuestion("steal",id,p.name);break}}
 function incomingTag(d){const now=Date.now(),p=players.get(d.taggerId);if(d.challengePassed!==true||!roundActive||now<roundStart||carried<=0||now<immuneUntil||!p||p.team===team||p.carried>=LIMIT)return;carried--;immuneUntil=now+IMMUNE;flash("💫 "+safe(d.taggerName||"Opponent")+" solved correctly and grabbed 1 star!");carryUI();placeStar();sendState();send({type:"tagSuccess",taggerId:d.taggerId,targetId:playerId,targetName:name})}
 function tagSuccess(d){if(!roundActive||Date.now()<roundStart||carried>=LIMIT)return;carried++;stats.stolen++;flash("⚡ You grabbed 1 star from "+safe(d.targetName||"an opponent")+"!");carryUI();sendState()}
 function wallRects(){const ar=world.getBoundingClientRect();return[...arena.querySelectorAll(".wall")].map(el=>{const r=el.getBoundingClientRect();return{x:r.left-ar.left-8,y:r.top-ar.top-8,w:r.width+16,h:r.height+16}})}function blocked(nx,ny){const rad=23;return wallRects().some(r=>nx+rad>r.x&&nx-rad<r.x+r.w&&ny+rad>r.y&&ny-rad<r.y+r.h)}function stop(){Object.keys(move).forEach(k=>move[k]=false)}
 function prune(){const now=Date.now();for(const[id,p]of players){if(now-(p.lastSeen||0)>25000){players.delete(id);const el=document.querySelector('[data-player="'+id+'"]');if(el)el.remove()}}}
-function loop(now){const dt=Math.min(.05,(now-lastFrame)/1000);lastFrame=now;updateRoundClock();updateBoostUI();if(demoMode)botStep(dt);if(!isHost)prune();if(teamAssigned&&$("game").classList.contains("active")){if(roundActive&&Date.now()>=roundStart&&!qOpen){let dx=(move.right?1:0)-(move.left?1:0),dy=(move.down?1:0)-(move.up?1:0);if(dx||dy){if(dx<0)facing="left";else if(dx>0)facing="right";const len=Math.hypot(dx,dy)||1;dx/=len;dy/=len;const moveSpeed=SPEED*(Date.now()<boostUntil?BOOST_MULT:1),nx=Math.max(28,Math.min(mapW()-28,x+dx*moveSpeed*dt)),ny=Math.max(34,Math.min(mapH()-30,y+dy*moveSpeed*dt));if(!blocked(nx,ny)){x=nx;y=ny;drawSelf();moved=true;sendPos()}checkStar();checkBank()}}if(roundActive&&Date.now()>=roundStart&&!qOpen){checkTag()}if(now-lastHeartbeat>5000){lastHeartbeat=now;sendState()}const me=document.querySelector('[data-player="'+playerId+'"]');if(me){me.classList.toggle("immune",immuneUntil>Date.now());me.classList.toggle("boosting",boostUntil>Date.now())}}requestAnimationFrame(loop)}requestAnimationFrame(loop)
+function loop(now){const dt=Math.min(.05,(now-lastFrame)/1000);lastFrame=now;updateRoundClock();updateBoostUI();if(demoMode)botDemoStep(dt);if(!isHost)prune();if(teamAssigned&&$("game").classList.contains("active")){if(roundActive&&Date.now()>=roundStart&&!qOpen){let dx=(move.right?1:0)-(move.left?1:0),dy=(move.down?1:0)-(move.up?1:0);if(dx||dy){if(dx<0)facing="left";else if(dx>0)facing="right";const len=Math.hypot(dx,dy)||1;dx/=len;dy/=len;const moveSpeed=SPEED*(Date.now()<boostUntil?BOOST_MULT:1),nx=Math.max(28,Math.min(mapW()-28,x+dx*moveSpeed*dt)),ny=Math.max(34,Math.min(mapH()-30,y+dy*moveSpeed*dt));if(!blocked(nx,ny)){x=nx;y=ny;drawSelf();moved=true;sendPos()}checkStar();checkBank()}}if(roundActive&&Date.now()>=roundStart&&!qOpen){checkTag()}if(now-lastHeartbeat>5000){lastHeartbeat=now;sendState()}const me=document.querySelector('[data-player="'+playerId+'"]');if(me){me.classList.toggle("immune",immuneUntil>Date.now());me.classList.toggle("boosting",boostUntil>Date.now())}}requestAnimationFrame(loop)}requestAnimationFrame(loop)
 function bind(id,dir){const el=$(id),on=e=>{e.preventDefault();if(roundActive&&Date.now()>=roundStart&&!qOpen){if(dir==="left"||dir==="right"){facing=dir;drawSelf()}move[dir]=true}},off=e=>{e.preventDefault();move[dir]=false;if(moved)sendPos(true)};el.addEventListener("pointerdown",on);["pointerup","pointercancel","pointerleave"].forEach(ev=>el.addEventListener(ev,off))}
 [["up","up"],["down","down"],["left","left"],["right","right"]].forEach(a=>bind(...a));const keys={ArrowUp:"up",w:"up",W:"up",ArrowDown:"down",s:"down",S:"down",ArrowLeft:"left",a:"left",A:"left",ArrowRight:"right",d:"right",D:"right"};document.addEventListener("keydown",e=>{const d=keys[e.key];if(!d||!roundActive||Date.now()<roundStart||qOpen)return;e.preventDefault();if(d==="left"||d==="right"){facing=d;drawSelf()}move[d]=true});document.addEventListener("keyup",e=>{const d=keys[e.key];if(!d)return;e.preventDefault();move[d]=false;if(moved)sendPos(true)});window.addEventListener("blur",stop);window.addEventListener("resize",()=>{if(teamAssigned)updateCamera();if(isHost||isObserver)updateObserver()});window.addEventListener("orientationchange",()=>setTimeout(()=>{if(teamAssigned)updateCamera();if(isHost||isObserver)updateObserver()},120))
 tryBotBtn.addEventListener("click",startBotDemo);joinBtn.addEventListener("click",joinRoom);joinObserverBtn.addEventListener("click",joinObserver);creatorBtn.addEventListener("click",creatorRoom);roomInput.addEventListener("input",()=>roomInput.value=roomInput.value.replace(/\D/g,""));observerPinInput.addEventListener("input",()=>observerPinInput.value=observerPinInput.value.replace(/\D/g,""));roomInput.addEventListener("keydown",e=>{if(e.key==="Enter")joinRoom()});observerPinInput.addEventListener("keydown",e=>{if(e.key==="Enter")joinObserver()});creatorPassword.addEventListener("keydown",e=>{if(e.key==="Enter")creatorRoom()});enterBtn.addEventListener("click",enterArena);playerName.addEventListener("keydown",e=>{if(e.key==="Enter")enterArena()});startRoundBtn.addEventListener("click",startByHost);mathModeSelect.addEventListener("change",()=>setMathMode(mathModeSelect.value));playAgain.addEventListener("click",()=>{show($("hostLobby"));renderHostRoster();hostMsg.textContent="Ready for another round. Press Start when your class is ready."});
