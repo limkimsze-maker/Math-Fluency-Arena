@@ -1,4 +1,4 @@
-name: Fix banking pulse and burst
+name: Fix banking animation rendering
 
 on:
   push:
@@ -13,8 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Fix banking visuals
-        run: python .github/scripts/banking_visual_fix.py
+      - name: Correct banking animation CSS
+        run: python .github/scripts/banking_visual_fix_v3.py
       - name: Validate JavaScript
         run: |
           python3 - <<'PY'
@@ -26,17 +26,19 @@ jobs:
           Path('/tmp/star-game.js').write_text(m.group(1),encoding='utf-8')
           PY
           node --check /tmp/star-game.js
-      - name: Confirm stronger banking visuals
+      - name: Confirm corrected banking animations
         run: |
-          grep -q 'BANKING_VISUAL_FIX_V2' index.html
-          grep -q 'bankPulseStrong' index.html
-          grep -q 'bankBurstStrong' index.html
+          grep -q 'BANKING_VISUAL_FIX_V3' index.html
+          grep -q '@keyframes bankPulseStrong' index.html
+          grep -q '@keyframes bankBurstStrong' index.html
           grep -q '✅ BANKED!' index.html
           grep -q 'bankBase.classList.remove("bankBurst"),1100' index.html
+          if grep -A2 '@keyframes bankPulseStrong' index.html | grep -q '!important'; then exit 1; fi
+          if grep -A2 '@keyframes bankBurstStrong' index.html | grep -q '!important'; then exit 1; fi
       - name: Commit changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Fix banking pulse and success burst"
+          git commit -m "Correct banking pulse and burst animations"
           git push
