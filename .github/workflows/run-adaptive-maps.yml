@@ -1,4 +1,4 @@
-name: Build 3v3 team bot demo
+name: Build 12 map choices and previews
 
 on:
   push:
@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Add 3v3 team bot challenge
+      - name: Add 12 themed map layouts and previews
         run: python .github/scripts/device_compatibility.py
       - name: Validate JavaScript
         run: |
@@ -26,18 +26,22 @@ jobs:
           Path('/tmp/star-game.js').write_text(m.group(1),encoding='utf-8')
           PY
           node --check /tmp/star-game.js
-      - name: Confirm 3v3 bot markers
+      - name: Confirm 12-map chooser markers
         run: |
-          grep -q 'MULTI_BOT_3V3_V1' index.html
-          grep -q 'demo-blue-2' index.html
-          grep -q 'demo-red-3' index.html
-          grep -q 'function botDemoStep' index.html
-          grep -q 'demoTarget.isBot' index.html
-          grep -q 'p.isBot?84:TAG' index.html
+          grep -q 'MAP_CHOOSER_12_V1' index.html
+          grep -q 'compact_sg' index.html
+          grep -q 'compact_cn' index.html
+          grep -q 'mega_sg' index.html
+          grep -q 'mega_cn' index.html
+          grep -q 'Singapore City Garden' index.html
+          grep -q 'China Garden City' index.html
+          grep -q 'id="mapChoices"' index.html
+          grep -q 'function renderMiniMap' index.html
+          grep -q 'function renderMapChooser' index.html
       - name: Commit changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Add 3v3 team bot challenge"
+          git commit -m "Add 12 map layouts and lobby previews"
           git push
